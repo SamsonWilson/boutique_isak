@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+{% block content %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Produits - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Ajout du formulaire "collapsable" -->
+    <div id="formAjoutProduit" style="display:{% if form_display %}block{% else %}none{% endif %}; margin-bottom:32px;">
+        <div class="card">
+            <h3>Ajouter un produit</h3>
+            <form method="post" action="">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="submit-btn"><i class="fa fa-save"></i> Enregistrer</button>
+                <button type="button" onclick="toggleFormAjout()" class="submit-btn" style="background:#e0e3ea;color:#233c59"><i class="fa fa-times"></i> Annuler</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tableau Produits -->
+    <div class="card">
+        <h2 style="margin-bottom:16px; color:#233c59"><i class="fa fa-database"></i> Produits</h2>
+        <div class="table-wrapper">
+          <button onclick="toggleFormAjout()" class="submit-btn" style="margin-bottom:16px;"><i class="fa fa-plus"></i> Ajouter un produit</button>
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Description</th>
+                    <th>Prix Unitaire (€)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td>{{ produit.description|truncatechars:32 }}</td>
+                        <td>{{ produit.prix_unitaire }}</td>
+                        <td class="actions">
+                            <a href="{% url 'produit_update' produit.id %}" title="Modifier"><i class="fa fa-edit"></i></a>
+                            <a href="{% url 'produit_delete' produit.id %}" title="Supprimer"><i class="fa fa-trash"></i></a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" style="text-align:center">Aucun produit</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFormAjout() {
+        const formDiv = document.getElementById('formAjoutProduit');
+        formDiv.style.display = (formDiv.style.display === 'none' || formDiv.style.display === '') ? 'block' : 'none';
+        // Scroll en haut après affichage
+        if (formDiv.style.display === 'block') window.scrollTo({top:0,behavior:'smooth'});
+    }
+</script>
+
+{% endblock %}

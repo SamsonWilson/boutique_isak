@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<h1>{{ produit.nom }}</h1>
+<p>{{ produit.description }}</p>
+<p>Prix : {{ produit.prix_unitaire }} €</p>
+<a href="{% url 'produit_update' produit.pk %}">Modifier</a> | 
+<a href="{% url 'produit_delete' produit.pk %}">Supprimer</a> |
+<a href="{% url 'produit_list' %}">Retour</a>
+{% comment %} 
+{% if produit.stock > 0 %}
+    <p>En stock : {{ produit.stock }}</p>
+    <form method="post" action="{% url 'vente_creer' %}">
+        {% csrf_token %}
+        <input type="hidden" name="produit_id" value="{{ produit.pk }}">
+        <button type="submit" class="btn btn-primary">Acheter</button>
+    </form>
+{% else %}
+    <p>Produit en rupture de stock.</p>
+{% endif %} {% endcomment %}
+{% endblock %}

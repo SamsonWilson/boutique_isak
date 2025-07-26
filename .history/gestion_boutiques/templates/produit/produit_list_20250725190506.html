@@ -1,0 +1,16 @@
+
+
+<h1>Liste des produits</h1>
+<a href="{% url 'produit_create' %}">Ajouter un produit</a>
+<ul>
+  {% for produit in produits %}
+    <li>
+      <a href="{% url 'produit_detail' produit.pk %}">{{ produit.nom }}</a>
+      - {{ produit.prix_unitaire }}€
+      <a href="{% url 'produit_update' produit.pk %}">Modifier</a>
+      <a href="{% url 'produit_delete' produit.pk %}">Supprimer</a>
+    </li>
+  {% empty %}
+    <li>Aucun produit.</li>
+  {% endfor %}
+</ul>

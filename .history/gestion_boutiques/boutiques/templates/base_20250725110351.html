@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Gestion multi-boutiques{% endblock %}</title>
+
+    <!-- Vous pouvez y placer vos CSS communs par exemple -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<header>
+    <nav>
+        <ul>
+            <li><a href="{% url 'accueil' %}">Accueil</a></li>
+            <li><a href="{% url 'vente_creer' %}">Nouvelle Vente</a></li>
+            <li><a href="{% url 'admin:index' %}">Administration</a></li>
+            {% if user.is_authenticated %}
+                <li>Connecté : {{ user.username }}</li>
+                <li><a href="{% url 'logout' %}">Déconnexion</a></li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Connexion</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+
+<main>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% block content %}
+    <!-- Contenu spécifique à la page -->
+    {% endblock content %}
+</main>
+
+<footer>
+    <p>&copy; 2024 Ma Gestion Multi-boutiques</p>
+</footer>
+
+</body>
+</html>

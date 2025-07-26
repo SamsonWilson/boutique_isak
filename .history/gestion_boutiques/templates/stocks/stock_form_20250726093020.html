@@ -1,0 +1,6 @@
+<h2>{% if form.instance.pk %}Modifier le stock{% else %}Ajouter un stock{% endif %}</h2>
+<form method="post" >
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-outline-primary">Enregistrer</button>
+</form>

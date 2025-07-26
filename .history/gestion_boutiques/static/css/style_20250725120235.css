@@ -1,0 +1,14 @@
+body {
+  padding-bottom: 40px;
+}
+
+.navbar-nav .nav-link {
+  font-weight: 600;
+}
+
+.text-danger {
+  font-size: 0.9rem;
+  
+  font-family: 'Poppins', sans-serif;
+  background-color: #f8f9fa; 
+}

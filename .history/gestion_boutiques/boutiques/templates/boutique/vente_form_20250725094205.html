@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Créer une vente</title>
+</head>
+<body>
+    <h1>Créer une nouvelle vente</h1>
+
+    {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Valider la vente</button>
+    </form>
+</body>
+</html>

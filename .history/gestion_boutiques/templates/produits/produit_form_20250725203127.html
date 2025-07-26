@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Section pour afficher les informations sur la maison (inchangée) -->
+    {% if maison %}
+        <div class="mb-4 row">
+            <div class="col-md-3">
+                <div class="text-center alert alert-primary">
+                    <h5>Maison</h5>
+                    <p class="mb-0"><strong>{{ maison.nom }}</strong></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center alert alert-info">
+                    <h5>Nombre Total de Pièces</h5>
+                    <p class="mb-0"><strong>{{ nombre_total_pieces }}</strong></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center alert alert-success">
+                    <h5>Nombre de Pièces Enregistrées</h5>
+                    <p class="mb-0"><strong>{{ pieces_enregistrees }}</strong></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center alert alert-warning">
+                    <h5>Nombre de Pièces Non Enregistrées</h5>
+                    <p class="mb-0"><strong>{{ pieces_non_enregistrees }}</strong></p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="shadow-lg card">
+        <div class="text-center text-white card-header bg-primary">
+            <h2>Ajouter une Pièce</h2>
+        </div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    {% if field.name != 'maison' %}
+                        
+                        {# Traitement spécial pour le champ 'surface' #}
+                        {% if field.name == 'surface' %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label"><strong>{{ field.label }}</strong></label>
+                            <div class="input-group">
+                                {{ field|add_class:"form-control"|attr:"readonly:readonly"|attr:"placeholder:Utiliser le calculateur pour ajouter les pièces..." }}
+                                <button class="btn btn-outline-primary" type="button" onclick="ouvrirSurfaceModal()">
+                                    <i class="fas fa-calculator"></i> Calculer / Ajouter des pièces
+                                </button>
+                            </div>
+                            {% if field.errors %}
+                            <div class="text-danger">{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {# Traitement normal pour les autres champs #}
+                        {% else %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label"><strong>{{ field.label }}</strong></label>
+                            {{ field|add_class:"form-control" }}
+                            {% if field.errors %}
+                            <div class="text-danger">{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                    {% endif %}
+                {% endfor %}
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                    <a href="{% url 'liste_chambres' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ################# MODALE MODIFIÉE ################# -->
+<div class="modal fade" id="surfaceModal" tabindex="-1" aria-labelledby="surfaceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="text-white modal-header bg-primary">
+        <h5 class="modal-title" id="surfaceModalLabel">Calculateur de Surface par Pièce</h5>
+        <!-- Pas de bouton fermer ici, pour forcer l'utilisation des boutons d'action -->
+      </div>
+      <div class="modal-body">
+        
+        <!-- Section pour ajouter une nouvelle pièce -->
+        <div class="p-3 mb-3 border rounded">
+            <h5>Étape 1 : Ajouter une pièce</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Type de pièce</label>
+                    <select id="type_piece_selection" class="form-select">
+                      <option value="" selected>-- Choisir --</option>
+                      <option value="Chambre">Chambre</option>
+                      <option value="Salon">Salon</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Longueur (m)</label>
+                    <input type="number" id="longueur_piece" class="form-control" placeholder="ex: 4.5">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Largeur (m)</label>
+                    <input type="number" id="largeur_piece" class="form-control" placeholder="ex: 3">
+                </div>
+            </div>
+             <div class="mt-3 text-center">
+                <button type="button" class="btn btn-primary" onclick="ajouterPiece()">
+                    <i class="fas fa-plus"></i> Ajouter cette pièce à la liste
+                </button>
+            </div>
+        </div>
+
+        <!-- Section pour afficher le récapitulatif -->
+        <div class="p-3 border rounded bg-light">
+            <h5>Étape 2 : Récapitulatif</h5>
+            <div id="recapitulatifSurface">
+                <p class="text-muted">Aucune pièce ajoutée pour le moment.</p>
+            </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="annulerEtFermer()">Annuler Tout</button>
+        <button type="button" class="btn btn-success" onclick="validerEtFermer()">
+            <i class="fas fa-check"></i> Valider et Reporter le total
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ################# FIN DE LA MODALE ################# -->
+
+
+<!-- ################# SCRIPT JAVASCRIPT MODIFIÉ ################# -->
+<script>
+// Variable globale pour stocker les chaînes de caractères des pièces (ex: "Chambre 12.00 m²")
+let piecesCalculees = [];
+// Variable pour garder une référence à la modale
+let surfaceModalInstance = null;
+
+function ouvrirSurfaceModal() {
+    // Réinitialise le tableau à chaque ouverture de la modale
+    piecesCalculees = [];
+    mettreAJourRecapitulatif(); // Met à jour l'affichage pour montrer qu'il est vide
+    
+    const modalElement = document.getElementById('surfaceModal');
+    // Crée l'instance de la modale si elle n'existe pas déjà
+    if (!surfaceModalInstance) {
+        surfaceModalInstance = new bootstrap.Modal(modalElement);
+    }
+    surfaceModalInstance.show();
+}
+
+function ajouterPiece() {
+    const type = document.getElementById('type_piece_selection').value;
+    const longueur = parseFloat(document.getElementById('longueur_piece').value);
+    const largeur = parseFloat(document.getElementById('largeur_piece').value);
+
+    // Validation simple
+    if (!type || !longueur || !largeur || longueur <= 0 || largeur <= 0) {
+        alert("Veuillez choisir un type et entrer une longueur et une largeur valides.");
+        return; // Arrête la fonction
+    }
+
+    const surface = longueur * largeur;
+    // Crée la chaîne de caractères pour cette pièce
+    const pieceTexte = `${type} ${surface.toFixed(2)} m²`;
+    
+    // Ajoute la nouvelle pièce au tableau
+    piecesCalculees.push(pieceTexte);
+
+    // Met à jour l'affichage du récapitulatif
+    mettreAJourRecapitulatif();
+
+    // Réinitialise les champs pour la prochaine saisie
+    document.getElementById('type_piece_selection').value = "";
+    document.getElementById('longueur_piece').value = "";
+    document.getElementById('largeur_piece').value = "";
+    document.getElementById('type_piece_selection').focus(); // Met le focus sur le premier champ
+}
+
+function mettreAJourRecapitulatif() {
+    const recapDiv = document.getElementById('recapitulatifSurface');
+    if (piecesCalculees.length === 0) {
+        recapDiv.innerHTML = '<p class="text-muted">Aucune pièce ajoutée pour le moment.</p>';
+    } else {
+        // Crée une liste HTML à partir du tableau
+        let htmlList = '<ul>';
+        piecesCalculees.forEach(piece => {
+            htmlList += `<li>${piece}</li>`;
+        });
+        htmlList += '</ul>';
+        recapDiv.innerHTML = htmlList;
+    }
+}
+
+function validerEtFermer() {
+    // Joint tous les éléments du tableau avec un " + "
+    const texteFinal = piecesCalculees.join(' + ');
+
+    // Met à jour le champ du formulaire principal
+    document.getElementById('id_surface').value = texteFinal;
+
+    // Ferme la modale
+    surfaceModalInstance.hide();
+}
+
+function annulerEtFermer() {
+    // Pas besoin de sauvegarder, on ferme juste la modale.
+    // L'état sera réinitialisé à la prochaine ouverture.
+    surfaceModalInstance.hide();
+}
+</script>
+<!-- ################# FIN DU SCRIPT ################# -->
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau de Bord</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background: #f6f8fb; font-family: Inter, sans-serif; margin:0; }
+        .container { max-width:1400px; margin:30px auto; }
+        .card { border-radius:14px; box-shadow:0 2px 20px #dbe6ff80; background:#fff; margin-bottom:28px; padding:22px; }
+        .dashboard-grid { display:flex; gap:34px; }
+        .col { flex:1; min-width:0;}
+        .table-wrapper { overflow:auto; margin-bottom:24px; }
+        table { width: 100%; border-collapse:collapse; background:#fff; }
+        thead { background: #f1f3f9;}
+        th, td { padding: 13px 10px; border-bottom:1px solid #eaeaea;}
+        th { font-weight:600; color: #4361ee; }
+        tr:hover { background: #f1f6ff;}
+        .actions a { margin:0 5px; color: #3b5bdb;}
+        .actions a:hover { color: #ff5a36;}
+        /* Tasks */
+        .task-list { list-style:none;padding:0; }
+        .task-item { background:#f7f8fc; margin-bottom:10px; border-radius:9px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
+        .task-item .label { font-weight: 500;}
+        .chat-box { background:#f7f8fc; border-radius:9px; min-height:210px; }
+        .chat-message { display:flex; align-items:flex-start; gap:9px; margin-bottom:9px;}
+        .chat-user-icon { width:32px; height:32px; border-radius:50%; background:#dbe5fa; display:flex; align-items:center; justify-content:center; font-size:1.15rem;}
+        @media (max-width: 1024px) {
+            .dashboard-grid { flex-direction:column;}
+            .col{ width:100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Tableau Produits -->
+    <div class="card">
+        <h2 style="margin-bottom:16px; color:#233c59"><i class="fa fa-database"></i> Produits</h2>
+        <div class="table-wrapper">
+          <a href="{% url 'produit_create' %}">Ajouter un produit</a>
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Description</th>
+                    <th>Prix Unitaire (€)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td>{{ produit.description|truncatechars:32 }}</td>
+                        <td>{{ produit.prix_unitaire }}</td>
+                        <td class="actions">
+                            <a href="{% url 'produit_update' produit.id %}" title="Modifier"><i class="fa fa-edit"></i></a>
+                            <a href="{% url 'produit_delete' produit.id %}" title="Supprimer"><i class="fa fa-trash"></i></a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" style="text-align:center">Aucun produit</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</div>
+</body>
+</html>
+
+{% endblock %}

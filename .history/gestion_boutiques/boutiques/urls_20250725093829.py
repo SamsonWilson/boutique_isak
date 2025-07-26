@@ -1,0 +1,9 @@
+from django.urls import path
+from .views.views_Boutique import BoutiqueListCreateView, BoutiqueRetrieveUpdateDestroyView
+
+urlpatterns = [
+    path('boutiques/', BoutiqueListCreateView.as_view(), name='boutique-list-create'),
+    path('boutiques/<int:pk>/', BoutiqueRetrieveUpdateDestroyView.as_view(), name='boutique-detail'),
+    path('vente/creer/', VenteCreateView.as_view(), name='vente_creer'),
+    path('vente/<int:vente_id>/recu/', recu_pdf, name='vente_recu'),
+]

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<h2>Connexion</h2>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="mb-3">
+    <label for="id_username" class="form-label">Nom d'utilisateur</label>
+    {{ form.username }}
+    {% if form.username.errors %}
+      <div class="text-danger">{{ form.username.errors }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label for="id_password" class="form-label">Mot de passe</label>
+    {{ form.password }}
+    {% if form.password.errors %}
+      <div class="text-danger">{{ form.password.errors }}</div>
+    {% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Se connecter</button>
+</form>
+{% endblock %}

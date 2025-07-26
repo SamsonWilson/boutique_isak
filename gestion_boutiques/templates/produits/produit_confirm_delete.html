@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<h1>Supprimer le produit</h1>
+<p>Es-tu sûr(e) de vouloir supprimer "{{ object.nom }}" ?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Oui, supprimer</button>
+  <a href="{% url 'produit_list' %}">Annuler</a>
+</form>
+{% endblock %}

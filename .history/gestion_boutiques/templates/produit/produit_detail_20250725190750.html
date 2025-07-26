@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<h1>{{ produit.nom }}</h1>
+<p>{{ produit.description }}</p>
+<p>Prix : {{ produit.prix_unitaire }} €</p>
+<a href="{% url 'produit_update' produit.pk %}">Modifier</a> | 
+<a href="{% url 'produit_delete' produit.pk %}">Supprimer</a> |
+<a href="{% url 'produit_list' %}">Retour</a>
+{% endblock %}

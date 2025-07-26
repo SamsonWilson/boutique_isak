@@ -1,0 +1,10 @@
+body {
+  background: linear-gradient(135deg, #dbeafe 0%, #f1f5f9 80%);
+  min-height: 100vh;
+}
+#sidebar {
+  background: rgba(34, 38, 70, 0.85);
+  backdrop-filter: blur(7px);
+  box-shadow: 2px 0 10px rgba(40, 52, 90, 0.15);
+  border-right: 1px solid #2b3050;
+}

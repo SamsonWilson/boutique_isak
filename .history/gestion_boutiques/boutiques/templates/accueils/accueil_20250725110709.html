@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Créer une vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<h1>Créer une nouvelle vente</h1>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+        <label>Produits</label>
+        {{ form.produits }}
+        {{ form.produits.errors }}
+    </div>
+    <div>
+        <label>Quantités (séparées par des virgules)</label>
+        {{ form.quantites }}
+        {{ form.quantites.errors }}
+    </div>
+
+    <button type="submit">Valider la vente</button>
+</form>
+{% endblock %}

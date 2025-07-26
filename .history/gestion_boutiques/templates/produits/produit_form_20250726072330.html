@@ -1,0 +1,51 @@
+<!-- templates/votre_app/produit_form_full.html -->
+{% extends "base.html" %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier le produit{% else %}Ajouter un produit{% endif %}
+{% endblock %}
+
+{% block content %}
+ass="container">
+    <div class="card">
+        <h2 style="margin-top: 0; color:#233c59;">
+            <i class="fa fa-edit"></i>
+            {% if form.instance.pk %}Modifier le produit{% else %}Ajouter un produit{% endif %}
+        </h2>
+
+        <!-- 
+            Note importante : L'attribut "action" est laissé vide.
+            Pour les CreateView/UpdateView, Django sait qu'il doit soumettre le formulaire
+            à l'URL actuelle. C'est la meilleure pratique.
+        -->
+        <form method="post">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="form-group">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="error-text">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="form-actions">
+                <a href="{% url 'produit_list' %}" class="btn-secondary">Annuler</a>
+                <button type="submit" class="btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% comment %} <!-- produits/produit_form.html -->
+<h1>{% if object %}Modifier{% else %}Ajouter{% endif %} un produit</h1>
+<form method="post" action="{% url 'produit_create' %}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Enregistrer</button>
+</form>
+
+<a href="{% url 'produit_list' %}">Retour</a> {% endcomment %}

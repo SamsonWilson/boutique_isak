@@ -1,0 +1,12 @@
+<!-- templates/votre_app/produit_form_partial.html -->
+<form method="post" action="{% url 'produit_create' %}">
+    {% csrf_token %}
+    
+    <h3 style="margin-top:0;">Ajouter un nouveau produit</h3>
+    
+    {{ form.as_p }}  {# Affiche le formulaire Django avec des paragraphes #}
+    
+    <div style="text-align: right; margin-top: 20px;">
+        <button type="submit" class="btn-primary">Enregistrer</button>
+    </div>
+</form>

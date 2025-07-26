@@ -1,0 +1,68 @@
+<!-- templates/votre_app/produit_form_full.html -->
+{% extends "base.html" %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier le produit{% else %}Ajouter un produit{% endif %}
+{% endblock %}
+
+{% block content %}
+<style>
+    /* NOTE : Idéalement, ces styles devraient être dans un fichier CSS statique partagé.
+       Pour simplifier, nous les mettons ici aussi. */
+    .container { max-width:1400px; margin:30px auto; }
+    .card { border-radius:14px; box-shadow:0 2px 20px #dbe6ff80; background:#fff; margin-bottom:28px; padding:22px; max-width: 700px; margin-left: auto; margin-right: auto;}
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; font-weight: 600; color: #4a5568; margin-bottom: 0.5rem; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 8px; box-sizing: border-box; font-family: Inter, sans-serif; font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #4361ee; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); }
+    .error-text { color: #e53e3e; font-size: 0.875rem; margin-top: 0.25rem; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+    .btn-primary { background-color: #4361ee; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-primary:hover { background-color: #3b5bdb; }
+    .btn-secondary { background-color: #e2e8f0; color: #4a5568; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: 600; }
+    .btn-secondary:hover { background-color: #cbd5e0; }
+</style>
+
+<div class="container">
+    <div class="card">
+        <h2 style="margin-top: 0; color:#233c59;">
+            <i class="fa fa-edit"></i>
+            {% if form.instance.pk %}Modifier le produit{% else %}Ajouter un produit{% endif %}
+        </h2>
+
+        <!-- 
+            Note importante : L'attribut "action" est laissé vide.
+            Pour les CreateView/UpdateView, Django sait qu'il doit soumettre le formulaire
+            à l'URL actuelle. C'est la meilleure pratique.
+        -->
+        <form method="post">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="form-group">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="error-text">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="form-actions">
+                <a href="{% url 'produit_list' %}" class="btn-secondary">Annuler</a>
+                <button type="submit" class="btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% comment %} <!-- produits/produit_form.html -->
+<h1>{% if object %}Modifier{% else %}Ajouter{% endif %} un produit</h1>
+<form method="post" action="{% url 'produit_create' %}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Enregistrer</button>
+</form>
+
+<a href="{% url 'produit_list' %}">Retour</a> {% endcomment %}

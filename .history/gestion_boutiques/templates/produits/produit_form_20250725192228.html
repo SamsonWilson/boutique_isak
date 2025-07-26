@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+{% block content %}
+<div class="product-form-container">
+    <h1 class="title">{% if object %}Modifier{% else %}Ajouter{% endif %} un produit</h1>
+    <form method="post" class="product-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="submit-btn">
+          <i class="fa fa-save"></i> Enregistrer
+      </button>
+    </form>
+    <a href="{% url 'produit_list' %}" class="back-link">
+      <i class="fa fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+<style>
+.product-form-container {
+    width: 100%;
+    max-width: 430px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 32px 28px 24px 28px;
+    border-radius: 20px;
+    box-shadow: 0 4px 40px rgba(60,90,150,0.08);
+    text-align: center;
+}
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #345;
+}
+.product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.product-form label {
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+    color: #233c59;
+}
+.product-form input, .product-form textarea {
+    padding: 13px 15px;
+    border: 1px solid #dde3ee;
+    border-radius: 9px;
+    background: #fafbfc;
+    width: 100%;
+    font-size: 1rem;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.product-form input:focus, .product-form textarea:focus {
+    outline: none;
+    border-color: #5578f8;
+    box-shadow: 0 0 0 2px #aec8fa;
+}
+.submit-btn {
+    width: 100%;
+    background: #3b5bdb;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 13px 0;
+    font-weight: 600;
+    font-size: 1.08rem;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px #dde3ee33;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.submit-btn:hover {
+    background: #2548ae;
+}
+.back-link {
+    display: inline-block;
+    margin-top: 24px;
+    color: #3b5bdb;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+.back-link:hover { color: #2548ae; }
+</style>
+
+<!-- Font Awesome CDN (ajoute-le dans base.html si besoin, sinon ici) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+{% endblock %}
+{% endblock %}

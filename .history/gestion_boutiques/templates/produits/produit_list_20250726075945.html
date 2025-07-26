@@ -1,0 +1,432 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Liste des Produits - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+{# Nous n'avons plus besoin de charger static ici car c'est déjà fait en haut #}
+{# Nous n'avons plus besoin des balises <html>, <head>, <body> car elles viennent de "base.html" #}
+
+<style>
+    /* Styles de la page (inchangés) */
+    body { background: #f6f8fb; font-family: Inter, sans-serif; margin:0; }
+    .container { max-width:1400px; margin:30px auto; }
+    .card { border-radius:14px; box-shadow:0 2px 20px #dbe6ff80; background:#fff; margin-bottom:28px; padding:22px; }
+    .dashboard-grid { display:flex; gap:34px; }
+    .col { flex:1; min-width:0;}
+    .table-wrapper { overflow:auto; margin-bottom:24px; }
+    table { width: 100%; border-collapse:collapse; background:#fff; }
+    thead { background: #f1f3f9;}
+    th, td { padding: 13px 10px; border-bottom:1px solid #eaeaea;}
+    th { font-weight:600; color: #4361ee; }
+    tr:hover { background: #f1f6ff;}
+    /* ================================================= */
+/* AJOUTEZ CE BLOC CSS DANS VOTRE BALISE <style> */
+/* ================================================= */
+
+/* Conteneur pour les boutons dans la cellule du tableau */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Crée un espace propre entre les boutons */
+}
+
+/* Style de base pour chaque bouton d'action */
+.actions .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%; /* Pour obtenir un cercle parfait */
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    font-size: 1rem;
+    color: #3b5bdb; /* Couleur de base pour l'icône */
+}
+
+/* Style spécifique pour le bouton "Modifier" au survol */
+.actions .btn-action-edit:hover {
+    background-color: #eef2ff; /* Fond bleu très clair au survol */
+    color: #4361ee;
+}
+
+/* Style spécifique pour le bouton "Supprimer" */
+.actions .btn-action-delete {
+    color: #e53e3e; /* Couleur de l'icône (rouge pour danger) */
+}
+
+.actions .btn-action-delete:hover {
+    background-color: #fff1f1; /* Fond rouge très clair au survol */
+}
+    /* NOUVEAUX STYLES POUR LA FENÊTRE MODALE */
+    .modal {
+        display: none; /* Cachée par défaut */
+        position: fixed; /* Reste en place même si on scrolle */
+        z-index: 1000; /* Se place au-dessus de tout le reste */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Permet de scroller si le contenu est trop grand */
+        background-color: rgba(0,0,0,0.5); /* Fond noir semi-transparent */
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 10% auto; /* 10% du haut et centré horizontalement */
+        padding: 25px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px; /* Largeur maximale */
+        border-radius: 14px;
+        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+        position: relative; /* Pour positionner le bouton de fermeture */
+    }
+
+    .close-button {
+        color: #aaa;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background-color: #4361ee;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary:hover {
+        background-color: #3b5bdb;
+    }
+      
+.stat-cards-row {
+    display: flex;
+    gap: 18px;
+    padding: 18px;
+    background: #f7f8fa;
+    max-width: 1700px;
+    margin: auto;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #e5ecfa;
+    min-width: 260px;
+    flex: 1 1 0;
+    padding: 22px 24px 12px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+}
+
+.stat-card-head {
+    font-size: .97em;
+    color: #9ea4b1;
+    letter-spacing: 0.02em;
+    margin-bottom: 7px;
+    font-weight: 450;
+}
+.stat-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 45px;
+}
+.stat-value {
+    font-size: 2.05em;
+    color: #384052;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+.stat-value.big { font-size: 2em; }
+.stat-pct {
+    color: #bac0cd;
+    font-size: 0.6em;
+    font-weight: 500;
+    margin-left: 3px;
+}
+.stat-pct.hires { color: #bac0cd;font-size: 1em;}
+.stat-icon {
+    font-size: 2em;
+    vertical-align: middle;
+    padding-right: 7px;
+}
+.stat-icon.up { color: #38d39f; }
+.stat-icon.down { color: #ff4d6d; }
+.stat-icon.plus { color: #38d39f;font-size:1.7em;}
+.stat-dollar {
+    color: #fed042;
+    font-weight: bold;
+    font-size: 1.35em;
+    margin-right: 4px; 
+}
+.stat-value.hires { font-size: 2em;}
+.stat-circular {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #f7f8fa;
+    font-size: 1em;
+    font-weight: bold;
+    box-shadow: 0 0 0 3px #eee;
+    position: relative;
+    margin-left: 18px;
+}
+.stat-circular span { font-size: 1em; }
+.stat-circular.stat-blue  { box-shadow: 0 0 0 3px #2e86ff;}
+.stat-circular.stat-red   { box-shadow: 0 0 0 3px #ea4e51;}
+.stat-circular.stat-orange{ box-shadow: 0 0 0 3px #ffa700;}
+.stat-circular.stat-green { box-shadow: 0 0 0 3px #42e695;}
+.stat-bar {
+    margin-top:14px;
+    height: 4px;
+    border-radius: 2px;
+    width: 100%;
+    background: #e7ecf3;
+}
+.stat-bar.stat-blue   { background: #2e86ff;}
+.stat-bar.stat-red    { background: #ea4e51;}
+.stat-bar.stat-orange { background: #ffa700;}
+.stat-bar.stat-green  { background: #42e695;}
+@media(max-width:1000px){
+  .stat-cards-row { flex-direction: column;}
+  .stat-card { margin-bottom: 16px;}
+}
+</style>
+<div class="stat-cards-row">
+  <!-- CARD 1 -->
+  <div class="stat-card">
+    <div class="stat-card-head">NEW ACCOUNTS</div>
+    <div class="stat-card-body">
+      <span class="stat-icon up">&#9650;</span>
+      <span class="stat-value">234 <span class="stat-pct">%</span></span>
+      <span class="stat-circular stat-blue"><span>58</span></span>
+    </div>
+    <div class="stat-bar stat-blue"></div>
+  </div>
+  <!-- CARD 2 -->
+  <div class="stat-card">
+    <div class="stat-card-head">TOTAL EXPENSES</div>
+    <div class="stat-card-body">
+      <span class="stat-icon down">&#9660;</span>
+      <span class="stat-value">71 <span class="stat-pct">%</span></span>
+      <span class="stat-circular stat-red"><span>62</span></span>
+    </div>
+    <div class="stat-bar stat-red"></div>
+  </div>
+  <!-- CARD 3 -->
+  <div class="stat-card">
+    <div class="stat-card-head">COMPANY VALUE</div>
+    <div class="stat-card-body">
+      <span class="stat-dollar">$</span>
+      <span class="stat-value big">1,45M</span>
+      <span class="stat-circular stat-orange"><span>72</span></span>
+    </div>
+    <div class="stat-bar stat-orange"></div>
+  </div>
+  <!-- CARD 4 -->
+  <div class="stat-card">
+    <div class="stat-card-head">NEW EMPLOYEES</div>
+    <div class="stat-card-body">
+      <span class="stat-icon plus">+</span>
+      <span class="stat-value hires">34 <span class="stat-pct hires">hires</span></span>
+      <span class="stat-circular stat-green"><span>81</span></span>
+    </div>
+    <div class="stat-bar stat-green"></div>
+  </div>
+</div>
+<style>
+</style>
+<div class="container">
+  
+    <!-- Tableau Produits -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin: 0; color:#233c59"><i class="fa fa-database"></i> Produits</h2>
+            <!-- MODIFICATION : On change le <a> pour un <button> et on lui donne un ID -->
+            <button id="open-modal-btn" class="btn-primary">Ajouter un produit</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Description</th>
+                    <th>Prix Unitaire (€)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td>{{ produit.description|truncatechars:32 }}</td>
+                        <td>{{ produit.prix_unitaire }}
+                          
+                        </td>
+                        <td class="actions">
+                          <button class="btn btn-outline-primary"><i class="fa fa-sliders-h"></i> Primary</button>
+  <button class="btn btn-outline-secondary"><a href="#" class="btn-action btn-action-edit" title="Modifier">
+                  <i class="fa fa-edit"></i></button>
+  <button class="btn btn-outline-success"><i class="fa fa-umbrella"></i> Success</button>
+  <button class="btn btn-outline-info"><i class="fa fa-snowflake"></i> Info</button>
+  <button class="btn btn-outline-warning"><i class="fa fa-trash"></i> Warning</button>
+  <button class="btn btn-outline-danger"><i class="fa fa-video"></i> Danger</button>
+  <button class="btn btn-outline-focus"><i class="fa fa-window-restore"></i> Focus</button>
+  
+                            <a href="#" class="btn-action btn-action-edit" title="Modifier">
+                  <i class="fa fa-edit"></i>
+    </a>
+    <a href="{% url 'produit_delete' produit.id %}" class="btn-action btn-action-delete" title="Supprimer">
+        <i class="fa fa-trash"></i>
+    </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="4" style="text-align:center">Aucun produit</td>
+                      </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========== LA STRUCTURE DE LA MODALE =========== -->
+<div id="product-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">×</span>
+    <div id="modal-body">
+        <!-- Le contenu du formulaire sera chargé ici par JavaScript -->
+        <p>Chargement du formulaire...</p>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Récupérer les éléments de la modale
+    const modal = document.getElementById('product-modal');
+    const openBtn = document.getElementById('open-modal-btn');
+    const closeBtn = document.querySelector('.close-button');
+    const modalBody = document.getElementById('modal-body');
+
+    // URL pour récupérer le formulaire de création
+    const createFormUrl = "{% url 'produit_create' %}";
+
+    // Fonction pour ouvrir la modale et charger le formulaire
+    const openModal = () => {
+        modal.style.display = 'block';
+        // Utilise fetch pour récupérer le formulaire depuis la vue Django
+        fetch(createFormUrl)
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+                // Attacher l'événement de soumission au nouveau formulaire
+                const form = modalBody.querySelector('form');
+                form.addEventListener('submit', handleFormSubmit);
+            })
+            .catch(error => {
+                modalBody.innerHTML = "<p>Erreur lors du chargement du formulaire.</p>";
+                console.error('Error fetching form:', error);
+            });
+    };
+
+    // Fonction pour fermer la modale
+    const closeModal = () => {
+        modal.style.display = 'none';
+        modalBody.innerHTML = '<p>Chargement du formulaire...</p>'; // Réinitialiser le contenu
+    };
+
+    // Gérer la soumission du formulaire via AJAX
+    const handleFormSubmit = (event) => {
+        event.preventDefault(); // Empêche la soumission classique de la page
+        const form = event.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                // Django a besoin de ce header pour la protection CSRF avec AJAX
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json()) // On attend une réponse JSON du serveur
+        .then(data => {
+            if (data.success) {
+                closeModal();
+                location.reload(); // Recharger la page pour voir le nouveau produit
+            } else {
+                // Si la soumission a échoué (ex: validation), on réaffiche le formulaire avec les erreurs
+                modalBody.innerHTML = data.form_html;
+                 // Il faut ré-attacher l'événement car le contenu a été remplacé
+                const newForm = modalBody.querySelector('form');
+                newForm.addEventListener('submit', handleFormSubmit);
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting form:', error);
+            alert("Une erreur s'est produite. Veuillez réessayer.");
+        });
+    };
+
+    // Événements
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+
+    // Fermer la modale si l'utilisateur clique en dehors de la boîte de contenu
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+});
+</script>
+
+{% endblock %}
+{% comment %} {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<h1>Liste des produits</h1>
+<a href="{% url 'produit_create' %}">Ajouter un produit</a>
+<ul>
+  {% for produit in produits %}
+    <li>
+      <a href="{% url 'produit_detail' produit.pk %}">{{ produit.nom }}</a>
+      - {{ produit.prix_unitaire }}€
+      <a href="{% url 'produit_update' produit.pk %}">Modifier</a>
+      <a href="{% url 'produit_delete' produit.pk %}">Supprimer</a>
+    </li>
+  {% empty %}
+    <li>Aucun produit.</li>
+  {% endfor %}
+</ul>
+{% endblock %} {% endcomment %}

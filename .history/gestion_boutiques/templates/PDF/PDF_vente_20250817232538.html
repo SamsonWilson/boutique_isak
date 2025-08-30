@@ -1,0 +1,45 @@
+{# templates/ventes/vente_pdf.html #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h1 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 6px; text-align: center; }
+        .total { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Reçu de Vente N°{{ vente.id }}</h1>
+    <p><strong>Date :</strong> {{ vente.date|date:"d/m/Y H:i" }}</p>
+    <p><strong>Client :</strong> {{ vente.client.nom }} | {{ vente.client.contact }}</p>
+    <p><strong>Boutique :</strong> {{ vente.boutique.nom }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>PU (€)</th>
+                <th>Quantité</th>
+                <th>Sous-total (€)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in vente.detailvente_set.all %}
+            <tr>
+                <td>{{ d.produit.nom }}</td>
+                <td>{{ d.prix_unitaire }}</td>
+                <td>{{ d.quantite }}</td>
+                <td>{{ d.quantite|floatformat:0|add:""|floatformat:2|default_if_none:"" }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total">
+                <td colspan="3">Total</td>
+                <td>{{ vente.total }} €</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

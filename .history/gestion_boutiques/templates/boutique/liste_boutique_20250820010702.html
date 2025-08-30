@@ -1,0 +1,83 @@
+<h2>Liste des Boutiques</h2>
+<ul>
+    {% for boutique in boutiques %}
+        <li>{{ boutique.nom }} - {{ boutique.adresse }} - {{ boutique.telephone }}</li>
+    {% empty %}
+        <li>Aucune boutique trouvée.</li>
+    {% endfor %}
+</ul>
+<div class="container mt-4">
+    <h1 class="mb-4">Rapport de stock</h1>
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="boutiqueSelect">Boutique :</label>
+            <select name="boutique" id="boutiqueSelect" class="form-select" onchange="this.form.submit()">
+                <option value="">Toutes</option>
+                {% for b in boutiques %}
+                    <option value="{{ b.id }}" {% if request.GET.boutique == b.id|stringformat:"s" %}selected{% endif %}>
+                        {{ b.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label for="produitSelect">Produit :</label>
+            <select name="produit" id="produitSelect" class="form-select" onchange="this.form.submit()">
+                <option value="">Tous</option>
+                {% for p in produits %}
+                    <option value="{{ p.id }}" {% if request.GET.produit == p.id|stringformat:"s" %}selected{% endif %}>
+                        {{ p.nom }}
+                    </option>
+                {% endfor %}    
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Date début</label>
+            <input type="date" name="date_debut" class="form-control" value="{{ request.GET.date_debut }}">
+        </div>
+        <div class="col-md-2">
+            <label>Date fin</label>
+            <input type="date" name="date_fin" class="form-control" value="{{ request.GET.date_fin }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+            <button type="button" onclick="window.print()" class="btn btn-success">Imprimer</button>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Boutique</th>
+                    <th>Produit</th>
+                    <th>Type</th>
+                    <th>Quantité</th>
+                    <th>Utilisateur</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for mv in mouvements %}
+                <tr>
+                    <td>{{ mv.date_mouvement|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mv.boutique.nom }}</td>
+                    <td>{{ mv.produit.nom }}</td>
+                    <td>
+                        {% if mv.type_mouvement == "entrée" %}
+                            <span class="badge bg-success">{{ mv.type_mouvement }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">{{ mv.type_mouvement }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ mv.quantite }}</td>
+                    <td>{{ mv.utilisateur.username|default:"-" }}</td>
+                    <td>{{ mv.description|default:"-" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7" class="text-center">Aucun mouvement trouvé</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>

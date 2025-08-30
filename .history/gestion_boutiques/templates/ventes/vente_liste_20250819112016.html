@@ -1,0 +1,88 @@
+<!-- templates/ventes/liste_ventes.html -->
+{% comment %} {% load custom_filters %} <!-- utilisation du filtre "mul" pour les sous-totaux --> {% endcomment %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des ventes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { text-align: center; margin-bottom: 30px; }
+
+        .vente {
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .vente-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 6px; text-align: left; font-size: 13px; }
+        th { background: #f2f2f2; }
+
+        .total {
+            text-align: right;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        @media print {
+            button { display: none; }
+            .vente { page-break-inside: avoid; } /* chaque vente ne sera pas coupée */
+        }
+    </style>
+</head>
+<body>
+    <h1>Liste des ventes</h1>
+    <button onclick="window.print()">Imprimer</button>
+
+    {% for vente in ventes %}
+    <div class="vente">
+        <div class="vente-header">
+            <div>
+                <strong>Vente N° {{ vente.id }}</strong><br>
+                Date : {{ vente.date|date:"d/m/Y H:i" }}<br>
+                Client : {{ vente.client.nom|default:"---" }}<br>
+                Boutique : {{ vente.boutique.nom }}
+            </div>
+            <div>
+                Vendu par : {{ vente.utilisateur.username }}<br>
+                <strong>Total : {{ vente.total }} €</strong>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Sous-total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in vente.details.all %}
+                <tr>
+                    <td>{{ detail.produit.nom }}</td>
+                    <td>{{ detail.quantite }}</td>
+                    <td>{{ detail.prix_unitaire }} €</td>
+                    <td>{{ detail.quantite|mul:detail.prix_unitaire }} €</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Aucun produit</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% empty %}
+        <p>Aucune vente enregistrée.</p>
+    {% endfor %}
+</body>
+</html>

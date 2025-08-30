@@ -1,0 +1,61 @@
+
+<div class="container mt-4">
+    <h2>
+        {% if object.pk %}
+            Modifier le stock : {{ object.produit }} ({{ object.boutique }})
+        {% else %}
+            Ajouter un mouvement de stock
+        {% endif %}
+    </h2>
+action="{% url 'produit_create' %}"
+    <form method="post" action="{{% url 'stock_edit' %}}">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            {{ form.boutique.label_tag }}
+            {{ form.boutique }}
+            {% if form.boutique.errors %}
+                <div class="text-danger">{{ form.boutique.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.produit.label_tag }}
+            {{ form.produit }}
+            {% if form.produit.errors %}
+                <div class="text-danger">{{ form.produit.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.quantite.label_tag }}
+            {{ form.quantite }}
+            {% if form.quantite.errors %}
+                <div class="text-danger">{{ form.quantite.errors }}</div>
+            {% endif %}
+        </div>
+
+        {% if form.type_mouvement %}
+        <div class="mb-3">
+            {{ form.type_mouvement.label_tag }}
+            {{ form.type_mouvement }}
+        </div>
+        {% endif %}
+
+        {% if form.description %}
+        <div class="mb-3">
+            {{ form.description.label_tag }}
+            {{ form.description }}
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-success">
+            {% if object.pk %}
+                💾 Enregistrer les modifications
+            {% else %}
+                ➕ Ajouter
+            {% endif %}
+        </button>
+        <a href="{% url 'stock_list' %}" class="btn btn-secondary">Retour à la liste</a>
+    </form>
+</div>

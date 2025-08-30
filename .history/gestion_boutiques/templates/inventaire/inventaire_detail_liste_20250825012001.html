@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" id="printArea">
+    <h2>Détails inventaire #{{ inventaire.id }} - {{ inventaire.boutique.nom }}</h2>
+    <p><strong>Date :</strong> {{ inventaire.date_creation|date:"d/m/Y H:i" }}</p>
+    <p><strong>Utilisateur :</strong> {{ inventaire.utilisateur.username }}</p>
+    <p><strong>Description :</strong> {{ inventaire.description }}</p>
+
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Produit</th>
+                <th>Stock théorique</th>
+                <th>Vendu</th>
+                <th>Stock réel</th>
+                <th>Écart</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in details %}
+            <tr>
+                <td>{{ d.produit.nom }}</td>
+                <td>{{ d.stock_theorique }}</td>
+                <td>{{ d.stock_vendu }}</td>
+                <td>{{ d.stock_reel }}</td>
+                <td class="{% if d.ecart < 0 %}text-danger{% elif d.ecart > 0 %}text-success{% endif %}">
+                    {{ d.ecart }}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5">Aucun détail enregistré.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- bouton d'impression -->
+<div class="mt-3">
+    <button class="btn btn-secondary" onclick="printDiv('printArea')">
+        🖨️ Imprimer
+    </button>
+</div>
+<div class="mt-3">
+    <button class="btn btn-secondary" onclick="printDiv('printArea')">
+        🖨️ Imprimer
+    </button>
+    <a href="{% url 'inventaire_pdf' inventaire.id %}" class="btn btn-danger">
+        📥 Télécharger PDF
+    </a>
+</div>
+<script>
+function printDiv(divId) {
+    var content = document.getElementById(divId).innerHTML;
+    var original = document.body.innerHTML;
+
+    document.body.innerHTML = content;
+    window.print();
+    document.body.innerHTML = original;
+}
+</script>
+{% endblock %}

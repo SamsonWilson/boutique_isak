@@ -1,0 +1,137 @@
+{% comment %} 
+<div class="container mt-4">
+    <h2>Mettre à jour le stock</h2>
+
+    <form method="post" action="{% url 'stock_edit' stock.id %}">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Veuillez corriger les erreurs suivantes :</strong>
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <a href="{% url 'stock_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div> {% endcomment %}
+<!-- votre_app/templates/votre_app/stock_edit_template.html -->
+
+<!-- Fichier : votre_app/templates/votre_app/stock_edit.html -->
+<!-- stocks/stock_Update_form.html -->
+{% comment %} Le code que vous avez fourni est déjà bon et fonctionnera avec la nouvelle vue. {% endcomment %}
+<!-- ======================= CORRECTION FINALE ======================= -->
+
+<div class="container mt-4">
+    <h2>Mettre à jour le stock pour : {{ stock.produit.nom }}</h2>
+
+    <!-- L'attribut action="" est plus propre pour une UpdateView,
+         car elle gère l'URL elle-même. -->
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <!-- Affichage des messages et erreurs globales (inchangé) -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card p-3 mb-4">
+            <h5 class="card-title">Gestion de la quantité</h5>
+            
+            <div class="mb-3">
+                <label for="stock_initial" class="form-label">Stock Actuel</label>
+                <input type="number" id="stock_initial" class="form-control" value="{{ stock.quantite }}" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.quantite_a_ajouter.id_for_label }}" class="form-label">{{ form.quantite_a_ajouter.label }}</label>
+                
+                <!-- Cette ligne génère l'<input> qui a DÉJÀ le bon id="id_quantite_a_ajouter" -->
+                {{ form.quantite_a_ajouter }}
+                
+                {% if form.quantite_a_ajouter.help_text %}
+                  <!-- CORRECTION : On a retiré l'attribut 'id' de cette div -->
+                  <div class="form-text">{{ form.quantite_a_ajouter.help_text }}</div>
+                {% endif %}
+                {% for error in form.quantite_a_ajouter.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label for="nouveau_stock" class="form-label">Nouveau Stock (calculé)</label>
+                <input type="number" id="nouveau_stock" class="form-control" readonly>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <a href="{% url 'stock_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+
+<!-- VOTRE JAVASCRIPT EST DÉJÀ PARFAIT ET N'A PAS BESOIN D'ÊTRE MODIFIÉ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stockInitialEl = document.getElementById('stock_initial');
+    // Ce code va maintenant trouver le bon <input> et non plus la <div>
+    const quantiteAjouterEl = document.getElementById('id_quantite_a_ajouter');
+    const nouveauStockEl = document.getElementById('nouveau_stock');
+
+    function calculerNouveauStock() {
+        const stockInitial = parseInt(stockInitialEl.value, 10) || 0;
+        const quantiteAjouter = parseInt(quantiteAjouterEl.value, 10) || 0;
+        const nouveauStock = stockInitial + quantiteAjouter;
+        nouveauStockEl.value = nouveauStock;
+    }
+    
+    // On s'assure que quantiteAjouterEl n'est pas null avant d'ajouter l'écouteur
+    if (quantiteAjouterEl) {
+        quantiteAjouterEl.addEventListener('input', calculerNouveauStock);
+        // On calcule une première fois au chargement
+        calculerNouveauStock();
+    } else {
+        console.error("L'élément avec l'ID 'id_quantite_a_ajouter' n'a pas été trouvé !");
+    }
+});
+</script>

@@ -1,0 +1,61 @@
+/* static/css/dashboard.css */
+
+:root {
+  --bs-primary-rgb: 67, 97, 238; /* Utilisé par Bootstrap pour les couleurs 'outline' etc. */
+  --primary-color: #4361ee;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --light-bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+  --card-border-radius: 0.75rem;
+}
+
+/* 1. Amélioration des Stat-Cards */
+.stat-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+.stat-card .display-4 {
+  font-weight: 700;
+}
+.stat-card .stat-icon {
+  font-size: 2.5rem;
+  padding: 15px;
+  border-radius: 50%;
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* 2. Amélioration du Tableau */
+.table-responsive {
+  max-height: 400px; /* Hauteur maximale pour le défilement vertical */
+}
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.table .btn-group .btn {
+    border-radius: 50% !important; /* Rend les boutons d'action parfaitement ronds */
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    line-height: 32px;
+}
+
+/* 3. Amélioration de la Modale */
+.modal-header {
+    border-bottom: none;
+}
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+#formModal .modal-body .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}

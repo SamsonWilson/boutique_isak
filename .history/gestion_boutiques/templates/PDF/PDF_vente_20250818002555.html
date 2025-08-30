@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+{% load math_tags %}
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture Vente {{ vente.id }}</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif; /* Compatible avec PDF */
+            font-size: 12px;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid #666;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Facture Vente N° {{ vente.id }}</h1>
+    <p><strong>Date :</strong> {{ vente.date|date:"d/m/Y H:i" }}</p>
+    <p><strong>Client :</strong> {{ vente.client.nom }}</p>
+    <p><strong>Contact :</strong> {{ vente.client.contact }}</p>
+
+    <h2>Détails</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Prix Unitaire</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in vente.details.all %}
+                <tr>
+                    <td>{{ detail.produit.nom }}</td>
+                    <td>{{ detail.quantite }}</td>
+                    <td>{{ detail.prix_unitaire }} €</td>
+                    <td>{{ detail.quantite|mul:detail.prix_unitaire }} €</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="total">Montant total : {{ vente.total }} €</p>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+<head>
+{# On charge le CSS et Font Awesome ici #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+{% block content %}
+
+<div class="container">
+  
+    <!-- Section 1 : Cartes de Statistiques -->
+    <div class="stat-cards-row">
+      <div class="stat-card">
+        <div class="stat-card-info">
+          <div class="label">PRODUITS UNIQUES</div>
+          <div class="value">{{ produits.count|default:"0" }}</div>
+        </div>
+        <i class="fa fa-box stat-card-icon icon-produits"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">STOCKS ENREGISTRÉS</div>
+            <div class="value">{{ stocks.count|default:"0" }}</div>
+        </div>
+        <i class="fa fa-warehouse stat-card-icon icon-stocks"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">TOTAL VENTES (Exemple)</div>
+            <div class="value">1,254€</div>
+        </div>
+        <i class="fa fa-arrow-trend-up stat-card-icon icon-ventes"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">CLIENTS (Exemple)</div>
+            <div class="value">89</div>
+        </div>
+        <i class="fa fa-users stat-card-icon icon-clients"></i>
+      </div>
+    </div>
+
+    <!-- Section 2 : Gestion des Stocks -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa fa-warehouse"></i>Gestion des Stocks</h2>
+            <a href="#" class="btn btn-primary js-open-modal" data-url="{% url 'stock_add' %}">
+                <i class="fa fa-plus"></i>
+                <span>Ajouter un mouvement</span>
+            </a>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Boutique</th>
+                        <th>Produit</th>
+                        <th>Type</th>
+                        <th>Quantité</th>
+                        <th>Date</th>
+                        <th>Utilisateur</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.boutique }}</td>
+                        <td>{{ stock.produit }}</td>
+                        <td>{{ stock.get_type_mouvement_display }}</td>
+                        <td>{{ stock.quantite }}</td>
+                        <td class="text-muted">{{ stock.date_mouvement|date:"d/m/Y H:i" }}</td>
+                        <td class="text-muted">{{ stock.utilisateur.username }}</td>
+
+                        <td class="actions">
+                           <a href="#" class="btn-action btn-action-edit js-open-modal" data-url="{% url 'stock_edit' stock.id %}" title="Modifier">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+
+                            <a href="#" class="btn-action btn-action-delete js-delete-item" data-url="{% url 'stock_delete' stock.id %}" title="Supprimer">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                            {# LE NOUVEAU BOUTON "DÉTAIL" #}
+                            {% comment %} <a href="{% url 'stock_detail' stock.id " class="btn-action btn-action-detail" 
+                                title="Voir l'historique">
+                                    <i class="fa fa-list-alt"></i>
+                            </a> {% endcomment %}
+                            {% comment %} {% if stock.boutique and stock.produit %}
+    <a href="{% url 'stock_detail' stock.boutique.id stock.produit.id %}">Détails</a>
+{% endif %} {% endcomment %}
+                        </td>
+                        </>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" style="text-align:center; padding: 40px;">Aucun mouvement de stock trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  
+    <!-- Section 3 : Gestion des Produits -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa fa-database"></i>Catalogue des Produits</h2>
+            <a href="#" class="btn btn-primary js-open-modal" data-url="{% url 'produit_create' %}">
+                <i class="fa fa-plus"></i>
+                <span>Ajouter un produit</span>
+            </a>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th><th>Description</th><th>Prix Unitaire</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td class="text-muted">{{ produit.description|truncatechars:50 }}</td>
+                        <td>{{ produit.prix_unitaire }} €</td>
+                        <td class="actions">
+                            <a href="#" class="btn-action btn-action-edit js-open-modal" data-url="{% url 'produit_update' produit.id %}" title="Modifier">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <a href="#" class="btn-action btn-action-delete js-delete-item" data-url="{% url 'produit_delete' produit.id %}" title="Supprimer">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" style="text-align:center; padding: 40px;">Aucun produit trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========== Fenêtre Modale Générique =========== -->
+<div id="main-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <div id="modal-body">
+        <!-- Le contenu (formulaire, etc.) sera injecté ici par JavaScript -->
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // --- GESTION GÉNÉRIQUE ET RÉUTILISABLE DE LA MODALE ---
+    const modal = document.getElementById('main-modal');
+    const modalBody = document.getElementById('modal-body');
+    const closeModalBtn = modal.querySelector('.close-button');
+
+    // Fonction pour OUVRIR la modale et charger le contenu depuis une URL
+    const openModal = (url) => {
+        modal.style.display = 'block';
+        modalBody.innerHTML = '<p style="text-align:center;">Chargement...</p>'; // Indicateur de chargement
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur réseau.');
+                return response.text();
+            })
+            .then(html => {
+                modalBody.innerHTML = html;
+                const form = modalBody.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', handleFormSubmit);
+                }
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<p style="color:red; text-align:center;">Erreur: Impossible de charger le contenu.</p>`;
+                console.error('Erreur Fetch pour la modale:', error);
+            });
+    };
+
+    // Fonction pour FERMER la modale
+    const closeModal = () => {
+        modal.style.display = 'none';
+        modalBody.innerHTML = ''; // Nettoyer le contenu
+    };
+
+    // Fonction pour GÉRER LA SOUMISSION du formulaire dans la modale
+    const handleFormSubmit = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                'X-Requested-With': 'XMLHttpRequest' // Indique à Django que c'est une requête AJAX
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Si la soumission réussit, on ferme la modale et on recharge la page
+                closeModal();
+                location.reload(); 
+            } else {
+                // S'il y a des erreurs de validation, on réaffiche le formulaire avec les erreurs
+                modalBody.innerHTML = data.form_html;
+                modalBody.querySelector('form').addEventListener('submit', handleFormSubmit);
+            }
+        })
+        .catch(error => console.error('Erreur de soumission du formulaire:', error));
+    };
+
+    // --- ATTACHER LES ÉVÉNEMENTS ---
+
+    // 1. Pour tous les éléments qui ouvrent la modale (créer, modifier)
+    document.querySelectorAll('.js-open-modal').forEach(trigger => {
+        trigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            const url = this.dataset.url;
+            openModal(url);
+        });
+    });
+
+    // 2. Pour tous les éléments qui suppriment un item
+    document.querySelectorAll('.js-delete-item').forEach(trigger => {
+        trigger.addEventListener('click', function(event) {
+            event.preventDefault();
+            const url = this.dataset.url;
+            const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cet élément ? Cette action est irréversible.");
+            
+            if (confirmation) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value; // Récupérer le token CSRF de la page
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Erreur lors de la suppression.");
+                    }
+                })
+                .catch(error => console.error('Erreur de suppression:', error));
+            }
+        });
+    });
+
+    // 3. Pour fermer la modale
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+});
+</script>
+{% endblock %}
+

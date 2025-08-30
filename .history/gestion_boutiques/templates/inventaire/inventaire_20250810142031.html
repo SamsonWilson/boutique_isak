@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de l'Inventaire</title>
+    <style>
+        /* Styles similaires à la page de caisse pour la cohérence */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1, h2 { color: #1c2e4a; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }
+        .nav-link { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; }
+        .nav-link:hover { background-color: #2980b9; }
+        .form-section { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: flex-end; }
+        .form-grid input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .form-grid button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; background-color: #27ae60; color: white; font-weight: 600; }
+        .inventory-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .inventory-table th, .inventory-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; }
+        .inventory-table th { background-color: #f8f9fa; }
+        .actions-cell button { margin-right: 5px; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        .edit-btn { background-color: #f39c12; }
+        .delete-btn { background-color: #e74c3c; }
+        .price, .stock { text-align: right; }
+        /* Style pour la modale d'édition (similaire à la page de caisse) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 25px 30px; border-radius: 8px; width: 90%; max-width: 450px; }
+    </style>
+</head>
+<body>
+
+    <!-- Modale pour l'édition de produit -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Modifier le Produit</h3>
+            <div class="form-grid" style="grid-template-columns: 1fr; margin-top: 15px;">
+                <input type="hidden" id="edit-product-id">
+                <div><label>Nom du produit</label><input type="text" id="edit-product-name"></div>
+                <div><label>Prix (€)</label><input type="number" step="0.01" id="edit-product-price"></div>
+                <div><label>Stock</label><input type="number" step="1" id="edit-product-stock"></div>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button id="modal-cancel-btn" style="background-color: #7f8c8d;">Annuler</button>
+                    <button id="modal-save-btn" style="background-color: #3498db;">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="caisse.html" class="nav-link">← Aller à la Caisse</a>
+        <h1>Gestion de l'Inventaire</h1>
+
+        <div class="form-section">
+            <h2>Ajouter un nouveau produit</h2>
+            <form id="add-product-form" class="form-grid">
+                <div>
+                    <label>Nom du produit</label>
+                    <input type="text" id="new-product-name" required>
+                </div>
+                <div>
+                    <label>Prix (€)</label>
+                    <input type="number" id="new-product-price" step="0.01" min="0" required>
+                </div>
+                <div>
+                    <label>Stock initial</label>
+                    <input type="number" id="new-product-stock" step="1" min="0" required>
+                </div>
+                <button type="submit">Ajouter</button>
+            </form>
+        </div>
+
+        <h2>Liste des produits</h2>
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th>Nom du Produit</th>
+                    <th class="price">Prix</th>
+                    <th class="stock">Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-list">
+                <!-- La liste des produits sera injectée ici par JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'mes-produits';
+
+        // Éléments du DOM
+        const inventoryList = document.getElementById('inventory-list');
+        const addForm = document.getElementById('add-product-form');
+        
+        // Éléments de la modale
+        const modal = document.getElementById('edit-modal');
+        const editIdInput = document.getElementById('edit-product-id');
+        const editNameInput = document.getElementById('edit-product-name');
+        const editPriceInput = document.getElementById('edit-product-price');
+        const editStockInput = document.getElementById('edit-product-stock');
+
+        // Fonctions de gestion des données
+        function getProducts() {
+            const products = localStorage.getItem(STORAGE_KEY);
+            if (products) {
+                return JSON.parse(products);
+            } else {
+                // Si le stock est vide, on initialise avec des données par défaut
+                const defaultProducts = [
+                    { id: 1, name: "Pomme Gala", price: 0.50, stock: 100 },
+                    { id: 2, name: "Banane", price: 0.30, stock: 150 },
+                    { id: 3, name: "Pain de campagne (500g)", price: 2.20, stock: 30 },
+                ];
+                saveProducts(defaultProducts);
+                return defaultProducts;
+            }
+        }
+
+        function saveProducts(products) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+        }
+
+        // Fonctions d'affichage et de manipulation
+        function renderInventory() {
+            const products = getProducts();
+            inventoryList.innerHTML = '';
+            products.forEach(p => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${p.name}</td>
+                    <td class="price">${p.price.toFixed(2)} €</td>
+                    <td class="stock">${p.stock}</td>
+                    <td class="actions-cell">
+                        <button class="edit-btn" data-id="${p.id}">Modifier</button>
+                        <button class="delete-btn" data-id="${p.id}">Supprimer</button>
+                    </td>
+                `;
+                inventoryList.appendChild(row);
+            });
+            attachActionListeners();
+        }
+
+        function addProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-product-name').value;
+            const price = parseFloat(document.getElementById('new-product-price').value);
+            const stock = parseInt(document.getElementById('new-product-stock').value, 10);
+
+            if (!name || isNaN(price) || isNaN(stock)) {
+                alert("Veuillez remplir tous les champs correctement.");
+                return;
+            }
+
+            const products = getProducts();
+            const newProduct = {
+                id: Date.now(), // ID unique basé sur le temps
+                name,
+                price,
+                stock
+            };
+            products.push(newProduct);
+            saveProducts(products);
+            renderInventory();
+            addForm.reset();
+        }
+        
+        function deleteProduct(productId) {
+            if (!confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
+            let products = getProducts();
+            products = products.filter(p => p.id !== productId);
+            saveProducts(products);
+            renderInventory();
+        }
+
+        function openEditModal(productId) {
+            const products = getProducts();
+            const productToEdit = products.find(p => p.id === productId);
+            if (productToEdit) {
+                editIdInput.value = productToEdit.id;
+                editNameInput.value = productToEdit.name;
+                editPriceInput.value = productToEdit.price;
+                editStockInput.value = productToEdit.stock;
+                modal.classList.add('active');
+            }
+        }
+
+        function saveEditedProduct() {
+            const id = parseInt(editIdInput.value, 10);
+            const name = editNameInput.value;
+            const price = parseFloat(editPriceInput.value);
+            const stock = parseInt(editStockInput.value, 10);
+            
+            if (!name || isNaN(price) || isNaN(stock)) {
+                alert("Veuillez vérifier les valeurs saisies.");
+                return;
+            }
+
+            let products = getProducts();
+            const productIndex = products.findIndex(p => p.id === id);
+            if (productIndex > -1) {
+                products[productIndex] = { id, name, price, stock };
+                saveProducts(products);
+                renderInventory();
+                closeEditModal();
+            }
+        }
+
+        function closeEditModal() {
+            modal.classList.remove('active');
+        }
+
+        function attachActionListeners() {
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => openEditModal(parseInt(e.target.dataset.id, 10)));
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => deleteProduct(parseInt(e.target.dataset.id, 10)));
+            });
+        }
+
+        // Écouteurs d'événements
+        addForm.addEventListener('submit', addProduct);
+        document.getElementById('modal-save-btn').addEventListener('click', saveEditedProduct);
+        document.getElementById('modal-cancel-btn').addEventListener('click', closeEditModal);
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', renderInventory);
+    </script>
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,8 @@
+<h2>Liste des Boutiques</h2>
+<ul>
+    {% for boutique in boutiques %}
+        <li>{{ boutique.nom }} - {{ boutique.adresse }} - {{ boutique.telephone }}</li>
+    {% empty %}
+        <li>Aucune boutique trouvée.</li>
+    {% endfor %}
+</ul>

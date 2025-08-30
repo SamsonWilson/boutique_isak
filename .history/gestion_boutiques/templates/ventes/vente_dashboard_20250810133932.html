@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+
+<h2>Nouvelle Vente</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ vente_form.as_p }}
+    <h4>Détails de la vente</h4>
+    {{ formset.management_form }}
+    <table>
+      <thead>
+        <tr>
+          <th>Produit</th>
+          <th>Quantité</th>
+          <th>Prix unitaire</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for form in formset %}
+        <tr>
+          <td>{{ form.produit }}</td>
+          <td>{{ form.quantite }}</td>
+          <td>{{ form.prix_unitaire }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-outline-primary">Enregistrer la vente</button>
+</form>
+
+<hr>
+
+<h2>Liste des ventes</h2>
+<table>
+  <thead>
+    <tr>
+      <th>N° Vente</th>
+      <th>Boutique</th>
+      <th>Utilisateur</th>
+      <th>Date</th>
+      <th>Total</th>
+      <th>Détail</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for vente in ventes %}
+    <tr>
+      <td>{{ vente.id }}</td>
+      <td>{{ vente.boutique }}</td>
+      <td>{{ vente.utilisateur }}</td>
+      <td>{{ vente.date|date:"d/m/Y H:i" }}</td>
+      <td>{{ vente.total }} €</td>
+      <td>
+        <ul>
+        {% for det in vente.details.all %}
+          <li>{{ det.produit }} (x{{ det.quantite }}) à {{ det.prix_unitaire }} €</li>
+        {% endfor %}
+        </ul>
+      </td>
+    </tr>
+    {% empty %}
+      <tr><td colspan="6">Aucune vente trouvée.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
+

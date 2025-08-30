@@ -1,0 +1,99 @@
+<!-- templates/stock/rapport_stock.html -->
+<!-- templates/stock/stock_courant_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Rapport Journalier de Stock</h1>
+
+    <!-- Formulaire de filtre -->
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label>Boutique :</label>
+            <select name="boutique" class="form-control">
+                <option value="">Toutes</option>
+                {% for b in boutiques %}
+                    <option value="{{ b.id }}" {% if request.GET.boutique == b.id|stringformat:"s" %}selected{% endif %}>
+                        {{ b.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label>Produit :</label>
+            <select name="produit" class="form-control">
+                <option value="">Tous</option>
+                {% for p in produits %}
+                    <option value="{{ p.id }}" {% if request.GET.produit == p.id|stringformat:"s" %}selected{% endif %}>
+                        {{ p.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label>Date début :</label>
+            <input type="date" name="date_debut" value="{{ request.GET.date_debut }}" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label>Date fin :</label>
+            <input type="date" name="date_fin" value="{{ request.GET.date_fin }}" class="form-control">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+            <button type="button" onclick="window.print()" class="btn btn-success">Imprimer</button>
+        </div>
+    </form>
+
+    <!-- Tableau rapport -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Boutique</th>
+                    <th>Produit</th>
+                    <th>Type</th>
+                    <th>Quantité</th>
+                    <th>Utilisateur</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mv in mouvements %}
+                <tr>
+                    <td>{{ mv.date_mouvement|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mv.boutique.nom }}</td>
+                    <td>{{ mv.produit.nom }}</td>
+                    <td>
+                        {% if mv.type_mouvement == "entrée" %}
+                            <span class="badge bg-success">Entrée</span>
+                        {% else %}
+                            <span class="badge bg-danger">Sortie</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ mv.quantite }}</td>
+                    <td>{{ mv.utilisateur.username|default:"-" }}</td>
+                    <td>{{ mv.description|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center">Aucun mouvement trouvé</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+@media print {
+    form, button { display: none !important; }
+    table { page-break-inside: avoid; }
+}
+</style>
+{% endblock %}
+

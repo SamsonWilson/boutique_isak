@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapports des Ventes</title>
+    <style>
+        /* Styles généraux */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1, h2 { color: #1c2e4a; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }
+        .nav-link { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; }
+        
+        /* Section des filtres et actions */
+        .filter-section { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; align-items: center; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-section label { font-weight: 600; font-size: 0.9em; }
+        .filter-section input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
+        .filter-buttons { grid-column: -1 / -3; display: flex; gap: 10px; justify-content: flex-end; }
+        .filter-section button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; }
+        #generate-report-btn { background-color: #27ae60; }
+        #print-report-btn { background-color: #8e44ad; }
+
+        /* Section résumé */
+        .summary-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .summary-card { background: #ecf0f1; padding: 20px; border-radius: 8px; text-align: center; }
+        .summary-card .value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .summary-card .label { font-size: 1rem; color: #7f8c8d; }
+        
+        /* Tableau de rapport */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .report-table th, .report-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; }
+        .report-table th { background-color: #f8f9fa; }
+        .num { text-align: right; }
+        .zero-value { color: #95a5a6; }
+        
+        /* --- STYLES POUR L'IMPRESSION --- */
+        .print-header { display: none; }
+        @media print {
+            body { background-color: #fff; padding: 20px; font-size: 10pt; }
+            .no-print { display: none !important; } /* Masque tous les éléments non imprimables */
+            .container { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+            .report-table th, .report-table td { padding: 8px; }
+            .print-header { display: block; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 15px; }
+            .print-header h2 { margin: 0; }
+            .print-header p { margin: 5px 0 0; color: #555; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- En-tête visible uniquement à l'impression -->
+    <div class="print-header">
+        <h2>Rapport des Ventes</h2>
+        <p>Période du <span id="print-date-start"></span> au <span id="print-date-end"></span></p>
+    </div>
+
+    <div class="container">
+        <a href="caisse.html" class="nav-link no-print">← Retour à la Caisse</a>
+        <h1>Rapports des Ventes</h1>
+
+        <div class="filter-section no-print">
+            <div class="filter-group">
+                <label for="date-start">Du :</label>
+                <input type="date" id="date-start">
+            </div>
+            <div class="filter-group">
+                <label for="date-end">Au :</label>
+                <input type="date" id="date-end">
+            </div>
+            <!-- NOUVEAU: Champ de recherche -->
+            <div class="filter-group" style="grid-column: span 2;">
+                <label for="search-input">Rechercher un produit</label>
+                <input type="text" id="search-input" placeholder="Filtrer par nom...">
+            </div>
+            <div class="filter-buttons">
+                <button id="generate-report-btn">Générer</button>
+                <!-- NOUVEAU: Bouton d'impression -->
+                <button id="print-report-btn">Imprimer (PDF)</button>
+            </div>
+        </div>
+
+        <div class="summary-section no-print">
+            <div class="summary-card">
+                <div id="summary-revenue" class="value">0.00 €</div>
+                <div class="label">Revenu Total</div>
+            </div>
+            <div class="summary-card">
+                <div id="summary-items-sold" class="value">0</div>
+                <div class="label">Articles Vendus</div>
+            </div>
+        </div>
+
+        <h2>Détail de tous les produits</h2>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th class="num">Stock Initial</th>
+                    <th class="num">Qté Vendue</th>
+                    <th class="num">Stock Final</th>
+                    <th class="num">Revenu du Produit</th>
+                </tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+        </table>
+    </div>
+
+<script>
+    const PRODUCTS_STORAGE_KEY = 'mes-produits';
+    const SALES_HISTORY_KEY = 'historique-ventes';
+
+    // Éléments du DOM
+    const dateStartInput = document.getElementById('date-start');
+    const dateEndInput = document.getElementById('date-end');
+    const generateBtn = document.getElementById('generate-report-btn');
+    const reportBody = document.getElementById('report-body');
+    const summaryRevenueEl = document.getElementById('summary-revenue');
+    const summaryItemsSoldEl = document.getElementById('summary-items-sold');
+    // NOUVEAUX éléments du DOM
+    const searchInput = document.getElementById('search-input');
+    const printBtn = document.getElementById('print-report-btn');
+    const printDateStartEl = document.getElementById('print-date-start');
+    const printDateEndEl = document.getElementById('print-date-end');
+
+    // Fonction de génération de rapport (inchangée)
+    function generateReport() {
+        const allProductsFromInventory = JSON.parse(localStorage.getItem(PRODUCTS_STORAGE_KEY) || '[]');
+        const salesHistory = JSON.parse(localStorage.getItem(SALES_HISTORY_KEY) || '[]');
+        
+        const startDate = new Date(dateStartInput.value);
+        const endDate = new Date(dateEndInput.value);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (!dateStartInput.value || !dateEndInput.value) {
+            alert("Veuillez sélectionner une date de début et de fin.");
+            return;
+        }
+
+        const filteredSales = salesHistory.filter(sale => new Date(sale.date) >= startDate && new Date(sale.date) <= endDate);
+
+        const salesData = {};
+        filteredSales.forEach(sale => {
+            sale.items.forEach(item => {
+                if (!salesData[item.id]) salesData[item.id] = { qteVendue: 0, revenu: 0 };
+                salesData[item.id].qteVendue += item.quantity;
+                salesData[item.id].revenu += item.price * item.quantity;
+            });
+        });
+        
+        reportBody.innerHTML = '';
+        let totalRevenue = 0, totalItemsSold = 0;
+        allProductsFromInventory.sort((a, b) => a.name.localeCompare(b.name));
+
+        allProductsFromInventory.forEach(product => {
+            const soldData = salesData[product.id] || { qteVendue: 0, revenu: 0 };
+            const stockFinal = product.stock;
+            const qteVendue = soldData.qteVendue;
+            const stockInitial = stockFinal + qteVendue;
+            const revenu = soldData.revenu;
+
+            totalRevenue += revenu;
+            totalItemsSold += qteVendue;
+
+            const row = document.createElement('tr');
+            // On ajoute le nom du produit dans un data-attribute pour la recherche
+            row.dataset.productName = product.name.toLowerCase(); 
+            row.innerHTML = `
+                <td>${product.name}</td>
+                <td class="num">${stockInitial}</td>
+                <td class="num ${qteVendue === 0 ? 'zero-value' : ''}">${qteVendue}</td>
+                <td class="num">${stockFinal}</td>
+                <td class="num ${revenu === 0 ? 'zero-value' : ''}">${revenu.toFixed(2)} €</td>
+            `;
+            reportBody.appendChild(row);
+        });
+
+        summaryRevenueEl.textContent = `${totalRevenue.toFixed(2)} €`;
+        summaryItemsSoldEl.textContent = totalItemsSold;
+
+        if (allProductsFromInventory.length === 0) {
+            reportBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Votre inventaire est vide.</td></tr>`;
+        }
+        
+        // Vider la recherche après avoir généré un nouveau rapport
+        searchInput.value = ''; 
+        filterTable(); // Appliquer le filtre (qui va tout montrer)
+    }
+
+    // NOUVELLE FONCTION pour filtrer le tableau
+    function filterTable() {
+        const query = searchInput.value.toLowerCase();
+        const rows = reportBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            const productName = row.dataset.productName;
+            if (productName.includes(query)) {
+                row.style.display = ''; // Affiche la ligne
+            } else {
+                row.style.display = 'none'; // Masque la ligne
+            }
+        });
+    }
+
+    // NOUVELLE FONCTION pour gérer l'impression
+    function printReport() {
+        // Mettre à jour les dates dans l'en-tête d'impression
+        printDateStartEl.textContent = new Date(dateStartInput.value).toLocaleDateString('fr-FR');
+        printDateEndEl.textContent = new Date(dateEndInput.value).toLocaleDateString('fr-FR');
+        
+        // Afficher toutes les lignes avant d'imprimer
+        const wasHidden = searchInput.value !== '';
+        if (wasHidden) {
+            reportBody.querySelectorAll('tr').forEach(row => row.style.display = '');
+        }
+
+        window.print(); // Ouvre la boîte de dialogue d'impression
+        
+        // Rétablir le filtre après l'impression si nécessaire
+        if(wasHidden){
+            filterTable();
+        }
+    }
+
+    // Écouteurs d'événements
+    generateBtn.addEventListener('click', generateReport);
+    searchInput.addEventListener('input', filterTable); // Filtre à chaque touche pressée
+    printBtn.addEventListener('click', printReport);
+    
+    // Initialisation
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    dateStartInput.value = firstDayOfMonth.toISOString().split('T')[0];
+    dateEndInput.value = today.toISOString().split('T')[0];
+    generateReport();
+</script>
+</body>
+</html>
+{% endblock %}

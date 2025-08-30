@@ -1,0 +1,10 @@
+<!-- produits/produit_form.html -->
+<h1>{% if object %}Modifier{% else %}Ajouter{% endif %} un produit</h1>
+<form method="post" action="{% url 'produit_create' %}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Enregistrer</button>
+   <button type="submit" class="btn btn-primary">Enregistrer</button>
+</form>
+
+<a href="{% url 'produit_list' %}">Retour</a>

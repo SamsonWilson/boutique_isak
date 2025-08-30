@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapports des Ventes</title>
+    <style>
+        /* Styles généraux */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 00px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1, h2 { color: #1c2e4a; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }
+        .nav-link { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; }
+        
+        /* Section des filtres */
+        .filter-section { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; align-items: center; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-section label { font-weight: 600; font-size: 0.9em; }
+        .filter-section input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
+        .filter-buttons { grid-column: -1 / -3; display: flex; gap: 10px; justify-content: flex-end; }
+        .filter-section button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; }
+        #generate-report-btn { background-color: #27ae60; }
+        #print-report-btn { background-color: #8e44ad; }
+
+        /* Tableau de rapport */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .report-table th, .report-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; vertical-align: middle; }
+        .report-table th { background-color: #f8f9fa; }
+        .num { text-align: right; }
+        .details-btn { background-color: #3498db; color: white; padding: 5px 10px; font-size: 0.8em; border-radius: 4px; cursor: pointer; border: none; }
+
+        /* --- STYLES DE LA MODALE DE DÉTAILS (NOUVEAU) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 25px 30px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+        .modal-header h3 { margin: 0; }
+        .modal-close-btn { font-size: 1.5rem; font-weight: bold; border: none; background: none; cursor: pointer; color: #aaa; }
+        .details-table { width: 100%; border-collapse: collapse; }
+        .details-table th, .details-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+
+        /* Styles pour l'impression */
+        .print-header { display: none; }
+        @media print {
+            body { background-color: #fff; padding: 20px; font-size: 10pt; }
+            .no-print { display: none !important; }
+            .container { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+            .print-header { display: block; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 15px; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- NOUVEAU: Structure de la Modale de Détails -->
+    <div id="details-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Détails des ventes</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Le contenu des détails sera injecté ici -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- ... reste du HTML inchangé jusqu'au tableau ... -->
+        <a href="caisse.html" class="nav-link no-print">← Retour à la Caisse</a>
+        <h1>Rapports des Ventes</h1>
+
+        <div class="filter-section no-print">
+            <div class="filter-group">
+                <label for="date-start">Du :</label> <input type="date" id="date-start">
+            </div>
+            <div class="filter-group">
+                <label for="date-end">Au :</label> <input type="date" id="date-end">
+            </div>
+            <div class="filter-group" style="grid-column: span 2;">
+                <label for="search-input">Rechercher un produit</label> <input type="text" id="search-input" placeholder="Filtrer par nom...">
+            </div>
+            <div class="filter-buttons">
+                <button id="generate-report-btn">Générer</button>
+                <button id="print-report-btn">Imprimer (PDF)</button>
+            </div>
+        </div>
+        
+        <h2>Détail de tous les produits</h2>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th class="num">Stock Initial</th>
+                    <th class="num">Qté Vendue</th>
+                    <th class="num">Stock Final</th>
+                    <th class="num">Revenu</th>
+                    <!-- NOUVEAU: Colonne Actions -->
+                    <th class="no-print">Détails</th>
+                </tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+        </table>
+    </div>
+
+<script>
+    const PRODUCTS_STORAGE_KEY = 'mes-produits';
+    const SALES_HISTORY_KEY = 'historique-ventes';
+
+    // Éléments du DOM
+    const dateStartInput = document.getElementById('date-start');
+    const dateEndInput = document.getElementById('date-end');
+    const generateBtn = document.getElementById('generate-report-btn');
+    const reportBody = document.getElementById('report-body');
+    const searchInput = document.getElementById('search-input');
+    const printBtn = document.getElementById('print-report-btn');
+
+    // NOUVEAUX éléments pour la modale
+    const detailsModal = document.getElementById('details-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalCloseBtn = detailsModal.querySelector('.modal-close-btn');
+
+    function generateReport() {
+        // ... (logique existante pour récupérer les données) ...
+        const allProducts = JSON.parse(localStorage.getItem(PRODUCTS_STORAGE_KEY) || '[]');
+        const salesHistory = JSON.parse(localStorage.getItem(SALES_HISTORY_KEY) || '[]');
+        const startDate = new Date(dateStartInput.value);
+        const endDate = new Date(dateEndInput.value);
+        endDate.setHours(23, 59, 59, 999);
+        
+        if (!dateStartInput.value || !dateEndInput.value) return;
+
+        const filteredSales = salesHistory.filter(sale => new Date(sale.date) >= startDate && new Date(sale.date) <= endDate);
+
+        const salesData = {};
+        filteredSales.forEach(sale => {
+            sale.items.forEach(item => {
+                if (!salesData[item.id]) salesData[item.id] = { qteVendue: 0, revenu: 0 };
+                salesData[item.id].qteVendue += item.quantity;
+                salesData[item.id].revenu += item.price * item.quantity;
+            });
+        });
+
+        reportBody.innerHTML = '';
+        allProducts.sort((a, b) => a.name.localeCompare(b.name));
+
+        allProducts.forEach(product => {
+            const soldData = salesData[product.id] || { qteVendue: 0, revenu: 0 };
+            const row = document.createElement('tr');
+            row.dataset.productName = product.name.toLowerCase();
+            row.innerHTML = `
+                <td>${product.name}</td>
+                <td class="num">${product.stock + soldData.qteVendue}</td>
+                <td class="num">${soldData.qteVendue}</td>
+                <td class="num">${product.stock}</td>
+                <td class="num">${soldData.revenu.toFixed(2)} €</td>
+                <td class="no-print">
+                    <a href='detail_vente_dashboard'> <button class="details-btn" data-product-id="${product.id}">Détails</button> </a>
+                </td>
+            `;
+            reportBody.appendChild(row);
+        });
+        
+        // Attacher les écouteurs aux nouveaux boutons
+        attachDetailButtonListeners();
+        filterTable();
+    }
+    
+    // NOUVELLE FONCTION pour attacher les écouteurs aux boutons "Détails"
+    function attachDetailButtonListeners() {
+        document.querySelectorAll('.details-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productId = parseInt(e.target.dataset.productId, 10);
+                showDetailsModal(productId);
+            });
+        });
+    }
+
+    // NOUVELLE FONCTION pour afficher la modale avec les détails
+    function showDetailsModal(productId) {
+        const allProducts = JSON.parse(localStorage.getItem(PRODUCTS_STORAGE_KEY) || '[]');
+        const salesHistory = JSON.parse(localStorage.getItem(SALES_HISTORY_KEY) || '[]');
+        const product = allProducts.find(p => p.id === productId);
+
+        if (!product) return;
+
+        modalTitle.textContent = `Détails pour : ${product.name}`;
+        
+        const startDate = new Date(dateStartInput.value);
+        const endDate = new Date(dateEndInput.value);
+        endDate.setHours(23, 59, 59, 999);
+
+        // On filtre à nouveau pour ne garder que les ventes de la période
+        const salesInPeriod = salesHistory.filter(sale => {
+            const saleDate = new Date(sale.date);
+            // On vérifie aussi que le produit est bien dans cette vente
+            return saleDate >= startDate && saleDate <= endDate && sale.items.some(item => item.id === productId);
+        });
+
+        let detailsHTML = '<p>Aucune vente enregistrée pour ce produit dans la période sélectionnée.</p>';
+        if (salesInPeriod.length > 0) {
+            detailsHTML = `
+                <table class="details-table">
+                    <thead><tr><th>Date</th><th class="num">Quantité Vendue</th></tr></thead>
+                    <tbody>`;
+            
+            salesInPeriod.forEach(sale => {
+                const itemSold = sale.items.find(item => item.id === productId);
+                if (itemSold) { // Sécurité supplémentaire
+                    const saleDate = new Date(sale.date).toLocaleDateString('fr-FR');
+                    detailsHTML += `<tr><td>${saleDate}</td><td class="num">${itemSold.quantity}</td></tr>`;
+                }
+            });
+
+            detailsHTML += `</tbody></table>`;
+        }
+
+        modalBody.innerHTML = detailsHTML;
+        detailsModal.classList.add('active');
+    }
+
+    // NOUVELLE FONCTION pour cacher la modale
+    function hideDetailsModal() {
+        detailsModal.classList.remove('active');
+    }
+
+    // Fonction de filtrage du tableau (inchangée)
+    function filterTable() {
+        const query = searchInput.value.toLowerCase();
+        reportBody.querySelectorAll('tr').forEach(row => {
+            row.style.display = row.dataset.productName.includes(query) ? '' : 'none';
+        });
+    }
+
+    // Fonction d'impression (inchangée)
+    function printReport() {
+        window.print();
+    }
+
+    // Écouteurs d'événements
+    generateBtn.addEventListener('click', generateReport);
+    searchInput.addEventListener('input', filterTable);
+    printBtn.addEventListener('click', printReport);
+    modalCloseBtn.addEventListener('click', hideDetailsModal);
+    detailsModal.addEventListener('click', (e) => { // Fermer si on clique sur le fond
+        if (e.target === detailsModal) {
+            hideDetailsModal();
+        }
+    });
+
+    // Initialisation
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    dateStartInput.value = firstDayOfMonth.toISOString().split('T')[0];
+    dateEndInput.value = today.toISOString().split('T')[0];
+    generateReport();
+</script>
+</body>
+</html>
+{% endblock %}

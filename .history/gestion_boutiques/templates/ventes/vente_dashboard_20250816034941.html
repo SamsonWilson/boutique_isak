@@ -1,0 +1,487 @@
+ {% extends "base.html" %}
+{% load static %}
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Caisse - Modale de Quantité</title>
+    
+</head>
+<body>
+    
+    <h5 class="mt-3">👤 Informations du Client</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        {{ form.nom.label_tag }}
+                        {{ form.nom }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.contact.label_tag }}
+                        {{ form.contact }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.adresse.label_tag }}
+                        {{ form.adresse }}
+                    </div>
+                </div>
+    <!-- Structure de la Modale -->
+    <div id="quantity-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-product-name"></h3>
+            </div>
+            <div class="modal-body">
+                <label for="modal-quantity-input">Quantité</label>
+                <input type="number" id="modal-quantity-input" min="1" value="1">
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn" class="modal-btn btn-secondary">Annuler</button>
+                <button id="modal-confirm-btn" class="modal-btn btn-primary">Ajouter</button>
+            </div>
+        </div>
+    </div>
+    <!-- Fin de la Modale -->
+
+    <div class="container">
+        <div class="print-header">
+            <h3>Merci de votre achat !</h3>
+            <p>Date : <span id="print-date"></span></p>
+        </div>
+
+        <h1 class="no-print">Système de Caisse</h1>
+
+        <div class="search-section no-print">
+            <label for="product-search">Chercher un produit</label>
+            <input type="text" id="product-search" placeholder="Tapez le nom d'un produit...">
+            <div id="search-results"></div>
+        </div>
+
+        <h2>Reçu Client</h2>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th class="price">Prix Unitaire</th>
+                    <th class="quantity">Quantité</th>
+                    <th class="price">Sous-total</th>
+                    <th class="no-print">Action</th>
+                </tr>
+            </thead>
+            <tbody id="receipt-items"></tbody>
+        </table>
+
+        <div class="total-section">
+            <h2>Total à Payer</h2>
+            <div id="total-price">0.00 €</div>
+        </div>
+        
+        <div class="actions no-print">
+            <button id="new-sale" class="action-btn">Nouvelle Vente</button>
+            <button id="print-receipt" class="action-btn">Imprimer le reçu</button>
+        </div>
+    </div>
+<script>
+    // --- VARIABLES ET DOM ---
+    const searchInput = document.getElementById('product-search');
+    const searchResults = document.getElementById('search-results');
+    const receiptItems = document.getElementById('receipt-items');
+    const totalPriceEl = document.getElementById('total-price');
+    const printBtn = document.getElementById('print-receipt');
+    const newSaleBtn = document.getElementById('new-sale');
+    const printDateEl = document.getElementById('print-date');
+    
+    const modal = document.getElementById('quantity-modal');
+    const modalProductName = document.getElementById('modal-product-name');
+    const modalQuantityInput = document.getElementById('modal-quantity-input');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+    let currentReceipt = [];
+    let productForModal = null;
+
+    // URL de recherche Django
+    const searchUrl = "{% url 'search_product' %}";
+    
+    // --- FONCTIONS ---
+    function showQuantityModal(product) {
+        productForModal = product;
+        modalProductName.textContent = product.name;
+        modalQuantityInput.value = "1";
+        modal.classList.add('active');
+        modalQuantityInput.focus();
+        modalQuantityInput.select();
+    }
+
+    function hideQuantityModal() {
+        modal.classList.remove('active');
+        productForModal = null;
+    }
+
+    function handleConfirmQuantity() {
+        const quantity = parseInt(modalQuantityInput.value, 10);
+
+        if (!productForModal || isNaN(quantity) || quantity <= 0) {
+            alert("Veuillez entrer une quantité valide.");
+            return;
+        }
+
+        const existingItem = currentReceipt.find(item => item.id === productForModal.id);
+
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            currentReceipt.push({ ...productForModal, quantity: quantity });
+        }
+
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+        renderReceipt();
+        hideQuantityModal();
+    }
+
+    function displaySearchResults(results) {
+        searchResults.innerHTML = '';
+        results.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+
+            // Couleur stock
+            let stockColor = "orange";
+            if (product.quantityStock > 20) stockColor = "green";
+            else if (product.quantityStock < 5) stockColor = "red";
+
+            item.innerHTML = `${product.name} - ${product.price.toFixed(2)} € 
+                <span style="color:${stockColor}; font-weight:bold;">
+                    (Stock: ${product.quantityStock})
+                </span>`;
+
+            item.addEventListener('click', () => {
+                showQuantityModal(product);
+            });
+            searchResults.appendChild(item);
+        });
+    }
+
+    function removeProductFromReceipt(productId) {
+        currentReceipt = currentReceipt.filter(item => item.id !== productId);
+        renderReceipt();
+    }
+
+    function renderReceipt() {
+        receiptItems.innerHTML = '';
+        let total = 0;
+
+        currentReceipt.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td class="price">${item.price.toFixed(2)} €</td>
+                <td class="quantity">${item.quantity}</td>
+                <td class="price">${subtotal.toFixed(2)} €</td>
+                <td class="no-print"><button class="delete-btn" data-product-id="${item.id}">X</button></td>
+            `;
+            receiptItems.appendChild(row);
+        });
+        
+        totalPriceEl.textContent = `${total.toFixed(2)} €`;
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                removeProductFromReceipt(parseInt(e.target.dataset.productId, 10));
+            });
+        });
+    }
+
+    function startNewSale() {
+        if (currentReceipt.length > 0 && !confirm("Êtes-vous sûr de vouloir commencer une nouvelle vente ?")) {
+            return;
+        }
+        currentReceipt = [];
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+        renderReceipt();
+    }
+
+    // --- ÉCOUTEURS D'ÉVÉNEMENTS ---
+
+    // Recherche Ajax
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        if (query.length === 0) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => displaySearchResults(data))
+            .catch(err => console.error("Erreur recherche:", err));
+    });
+
+    // Actions modale
+    modalConfirmBtn.addEventListener('click', handleConfirmQuantity);
+    modalCancelBtn.addEventListener('click', hideQuantityModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideQuantityModal();
+        }
+    });
+    modalQuantityInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleConfirmQuantity();
+        else if (e.key === 'Escape') hideQuantityModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            hideQuantityModal();
+        }
+    });
+
+    // Boutons principaux
+    printBtn.addEventListener('click', () => {
+        if (currentReceipt.length > 0) {
+            printDateEl.textContent = new Date().toLocaleDateString('fr-FR');
+            window.print();
+        } else {
+            alert("⚠️ Aucun produit dans le reçu");
+        }
+    });
+    
+    newSaleBtn.addEventListener('click', startNewSale);
+
+    // Initialisation
+    renderReceipt();
+</script>
+
+</body>
+</html>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+{% comment %} 
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle Vente</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .modal-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}
+        .modal-content {background:white;padding:20px;border-radius:8px;width:400px;}
+        .receipt-table th, .receipt-table td {padding:10px;}
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4>🛒 Nouvelle Vente</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" id="sale-form">
+                {% csrf_token %}
+
+                <!-- Client -->
+                <h5 class="mt-3">👤 Informations du Client</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        {{ form.nom.label_tag }}
+                        {{ form.nom }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.contact.label_tag }}
+                        {{ form.contact }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.adresse.label_tag }}
+                        {{ form.adresse }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Recherche produit -->
+                <h5>🔎 Ajouter des Produits</h5>
+                <input type="text" id="product-search" class="form-control" placeholder="Chercher un produit...">
+                <div id="search-results" class="list-group mt-2"></div>
+
+                <!-- Ticket de caisse -->
+                <h3 class="mt-4">Reçu Client</h3>
+                <table class="table table-bordered receipt-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produit</th>
+                            <th>Prix Unitaire</th>
+                            <th>Quantité</th>
+                            <th>Sous-total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receipt-items"></tbody>
+                </table>
+
+                <div class="text-end">
+                    <h4>Total à payer : <span id="total-price">0.00 €</span></h4>
+                </div>
+
+                <!-- Champ caché pour envoyer données -->
+                <input type="hidden" name="items" id="items-input">
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success">💾 Enregistrer la Vente</button>
+                    <button type="button" onclick="window.print()" class="btn btn-secondary">🖨️ Imprimer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modale quantité -->
+<div id="quantity-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h5 id="modal-product-name"></h5>
+        <label>Quantité</label>
+        <input type="number" id="modal-quantity-input" min="1" value="1" class="form-control">
+        <div class="mt-3 text-end">
+            <button id="modal-cancel-btn" type="button" class="btn btn-secondary">Annuler</button>
+            <button id="modal-confirm-btn" type="button" class="btn btn-primary">Ajouter</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const modal = document.getElementById("quantity-modal");
+let selectedProduct = null;
+
+const searchUrl = "{% url 'search_product' %}"; // ✅ correction Django URL
+
+// 🔎 Recherche AJAX
+document.getElementById("product-search").addEventListener("keyup", function () {
+    let q = this.value.trim();
+    let results = document.getElementById("search-results");
+
+    if (q.length <= 1) {
+        results.innerHTML = "";
+        return;
+    }
+
+    fetch(`${searchUrl}?q=${encodeURIComponent(q)}`)
+        .then(res => res.json())
+        .then(data => {
+            results.innerHTML = "";
+
+            if (data.length === 0) {
+                let emptyMsg = document.createElement("div");
+                emptyMsg.className = "list-group-item text-muted";
+                emptyMsg.textContent = "Aucun produit trouvé";
+                results.appendChild(emptyMsg);
+                return;
+            }
+
+            data.forEach(p => {
+                let item = document.createElement("button");
+                item.className = "list-group-item list-group-item-action";
+                item.type = "button";
+
+                // Déterminer la couleur selon la quantité
+                let stockColor = "orange"; // par défaut
+                if (p.quantite > 20) {
+                    stockColor = "green";
+                } else if (p.quantite < 5) {
+                    stockColor = "red";
+                }
+
+                // Contenu avec couleur pour la quantité
+                item.innerHTML = `${p.nom} - ${p.prix_unitaire}€ 
+                    <span style="color:${stockColor}; font-weight:bold;">
+                        (Stock: ${p.quantite})
+                    </span>`;
+
+                item.onclick = () => openModal(p);
+                results.appendChild(item);
+            });
+        })
+        .catch(err => {
+            console.error("Erreur lors de la recherche :", err);
+        });
+});
+
+
+// 🔲 Ouvrir modale
+function openModal(product){
+    selectedProduct = product;
+    document.getElementById("modal-product-name").textContent = product.nom;
+    document.getElementById("modal-quantity-input").value = 1;
+    modal.style.display = "flex";
+}
+
+// ❌ Fermer modale
+document.getElementById("modal-cancel-btn").onclick = () => modal.style.display = "none";
+
+// ✅ Ajouter produit au ticket
+document.getElementById("modal-confirm-btn").onclick = addProduct;
+
+function addProduct(){
+    let qte = parseInt(document.getElementById("modal-quantity-input").value);
+    let tbody = document.getElementById("receipt-items");
+    let tr = document.createElement("tr");
+
+    let prix = parseFloat(selectedProduct.prix);   // <- correction
+    let subtotal = (prix * qte).toFixed(2);
+
+    tr.innerHTML = `
+        <td>${selectedProduct.nom}</td>
+        <td>${prix}€</td>
+        <td>${qte}</td>
+        <td>${subtotal}€</td>
+        <td><button type="button" class="btn btn-danger btn-sm">🗑️</button></td>
+    `;
+    tr.dataset.id = selectedProduct.id;
+    tr.dataset.prix = prix;
+    tr.dataset.quantite = qte;
+
+    tr.querySelector("button").onclick = () => {
+        tr.remove();
+        updateTotal();
+    };
+
+    tbody.appendChild(tr);
+
+    updateTotal();
+    modal.style.display = "none";
+}
+
+// 🔄 Calcul du total
+function updateTotal(){
+    let rows = document.querySelectorAll("#receipt-items tr");
+    let total = 0;
+    let items = [];
+    rows.forEach(r=>{
+        let prix = parseFloat(r.dataset.prix);
+        let qte = parseInt(r.dataset.quantite);
+        total += prix * qte;
+        items.push({id:r.dataset.id, prix: prix, quantite: qte});
+    });
+    document.getElementById("total-price").textContent = total.toFixed(2) + " €";
+    document.getElementById("items-input").value = JSON.stringify(items);
+}
+</script>
+</body>
+</html> 
+{% endcomment %}
+

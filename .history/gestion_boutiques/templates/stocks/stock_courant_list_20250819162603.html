@@ -1,0 +1,63 @@
+<!-- templates/stock/stock_courant_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<h1>{{ produit.nom }}</h1>
+<p>{{ produit.description }}</p>
+<p>Prix : {{ produit.prix_unitaire }} €</p>
+<a href="{% url 'produit_update' produit.pk %}">Modifier</a> | 
+<a href="{% url 'produit_delete' produit.pk %}">Supprimer</a> |
+<a href="{% url 'produit_list' %}">Retour</a>
+{% comment %} 
+{% if produit.stock > 0 %}
+    <p>En stock : {{ produit.stock }}</p>
+    <form method="post" action="{% url 'vente_creer' %}">
+        {% csrf_token %}
+        <input type="hidden" name="produit_id" value="{{ produit.pk }}">
+        <button type="submit" class="btn btn-primary">Acheter</button>
+    </form>
+{% else %}
+    <p>Produit en rupture de stock.</p>
+{% endif %} {% endcomment %}
+{% endblock %}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Stock courant</h1>
+
+    <form method="get" class="mb-3">
+        <label>Boutique :</label>
+        <select name="boutique" onchange="this.form.submit()">
+            <option value="">Toutes</option>
+            {% for b in boutiques %}
+                <option value="{{ b.id }}" {% if request.GET.boutique == b.id|stringformat:"s" %}selected{% endif %}>{{ b.nom }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Boutique</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Détails</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for stock in stocks %}
+            <tr>
+                <td>{{ stock.boutique.nom }}</td>
+                <td>{{ stock.produit.nom }}</td>
+                <td>{{ stock.quantite }}</td>
+                <td><a href="{% url 'detail_produit_stock' stock.produit.id %}" class="btn btn-sm btn-primary">Voir mouvements</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center">Aucun stock trouvé</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,103 @@
+
+
+
+{% comment %} {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-light py-3">
+    <h4 class="mb-0">
+      <i class="fas fa-plus-circle text-success me-2"></i>
+      Enregistrer une Nouvelle Vente
+    </h4>
+  </div>
+  <div class="card-body p-4">
+    
+    <!-- Le formulaire de vente commence ici -->
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Pour afficher les erreurs générales du formulaire -->
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <!-- Champ Produit -->
+        <div class="col-md-8 mb-3">
+          <label for="id_produit" class="form-label fw-bold">Produit</label>
+          <select name="produit" id="id_produit" class="form-select">
+            <option selected disabled>--- Choisir un produit ---</option>
+            <!-- 
+              NOTE DJANGO : Ces options seront générées par une boucle.
+              Exemple :
+              {% for produit in tous_les_produits %}
+                <option value="{{ produit.id }}">{{ produit.nom }}</option>
+              {% endfor %}
+            -->
+            <option value="1">Clous (Boîte de 100)</option>
+            <option value="2">Saumon frais (kg)</option>
+            <option value="3">Pain complet</option>
+          </select>
+          {% if form.produit.errors %}<div class="text-danger small mt-1">{{ form.produit.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Champ Quantité -->
+        <div class="col-md-4 mb-3">
+          <label for="id_quantite" class="form-label fw-bold">Quantité</vende></label>
+          <input type="number" name="quantite" id="id_quantite" class="form-control" value="1" min="1">
+          {% if form.quantite.errors %}<div class="text-danger small mt-1">{{ form.quantite.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Champ Boutique -->
+        <div class="col-md-6 mb-3">
+          <label for="id_boutique" class="form-label fw-bold">Boutique</label>
+          <select name="boutique" id="id_boutique" class="form-select">
+            <option selected disabled>--- Choisir une boutique ---</option>
+            <!-- NOTE DJANGO : Idem, à remplir avec vos données -->
+            <option value="1">Quincaillerie Centrale</option>
+            <option value="2">Poissonnerie du Port</option>
+            <option value="3">Alimentation Générale "Le Panier"</option>
+          </select>
+          {% if form.boutique.errors %}<div class="text-danger small mt-1">{{ form.boutique.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Champ Prix de vente -->
+        <div class="col-md-6 mb-3">
+            <label for="id_prix_unitaire" class="form-label fw-bold">Prix de vente unitaire (€)</label>
+            <input type="number" name="prix_unitaire" id="id_prix_unitaire" class="form-control" step="0.01" placeholder="Ex: 12.50">
+            {% if form.prix_unitaire.errors %}<div class="text-danger small mt-1">{{ form.prix_unitaire.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Champ Client (optionnel) -->
+      <div class="mb-3">
+        <label for="id_client" class="form-label fw-bold">Client (Optionnel)</label>
+        <input type="text" name="client" id="id_client" class="form-control" placeholder="Nom du client ou laisser vide">
+        {% if form.client.errors %}<div class="text-danger small mt-1">{{ form.client.errors.0 }}</div>{% endif %}
+      </div>
+      
+      <!-- Boutons d'action -->
+      <hr class="my-4">
+      <div class="d-flex justify-content-end">
+        <a href="{% url 'accueil' %}" class="btn btn-secondary me-2">
+          <i class="fas fa-times me-2"></i>Annuler
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-2"></i>Enregistrer la vente
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %} {% endcomment %}

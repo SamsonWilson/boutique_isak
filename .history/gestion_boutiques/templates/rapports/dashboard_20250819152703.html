@@ -1,0 +1,135 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+
+
+{% block content %}
+<!-- templates/rapports/dashboard.html -->
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">📊 Tableau de bord</h1>
+
+    <!-- Ligne Statistiques -->
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h4>💰 Vente du jour</h4>
+                    <h2>{{ total_jour|default:0 }} €</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h4>🛍️ Dernières ventes</h4>
+                    <h2>{{ dernieres_ventes.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h4>⚠️ Stocks faibles</h4>
+                    <h2>{{ stocks_faibles.count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Ventes récentes -->
+    <h3>🛍️ 5 Dernières ventes</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Utilisateur</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in dernieres_ventes %}
+            <tr>
+                <td>{{ v.date|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.client.nom|default:"-" }}</td>
+                <td>{{ v.utilisateur.username }}</td>
+                <td>{{ v.total }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Graphiques -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h3>📊 Top 5 Produits vendus</h3>
+            <canvas id="produitsChart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <h3>📈 Répartition du CA</h3>
+            <canvas id="caChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Stocks faibles -->
+    <div class="mt-5">
+        <h3>⚠️ Produits en stock faible (&lt;= 5)</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Boutique</th>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in stocks_faibles %}
+                <tr>
+                    <td>{{ s.boutique.nom }}</td>
+                    <td>{{ s.produit.nom }}</td>
+                    <td>{{ s.quantite }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3" class="text-center">Aucun stock faible</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const produitsLabels = {{ labels_json|safe }};
+    const produitsQuantites = {{ quantites_json|safe }};
+    const produitsCA = {{ ca_json|safe }};
+
+    new Chart(document.getElementById("produitsChart"), {
+        type: 'bar',
+        data: {
+            labels: produitsLabels,
+            datasets: [{
+                label: "Quantité vendue",
+                data: produitsQuantites,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    new Chart(document.getElementById("caChart"), {
+        type: 'pie',
+        data: {
+            labels: produitsLabels,
+            datasets: [{
+                data: produitsCA,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8E44AD', '#27AE60']
+            }]
+        }
+    });
+</script>
+
+{% endblock %}

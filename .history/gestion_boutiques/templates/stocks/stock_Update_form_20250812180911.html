@@ -1,0 +1,137 @@
+{% comment %} 
+<div class="container mt-4">
+    <h2>Mettre à jour le stock</h2>
+
+    <form method="post" action="{% url 'stock_edit' stock.id %}">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Veuillez corriger les erreurs suivantes :</strong>
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <a href="{% url 'stock_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div> {% endcomment %}
+<!-- votre_app/templates/votre_app/stock_edit_template.html -->
+
+<div class="container mt-4">
+    <!-- On suppose que votre objet 'stock' a une relation vers un 'product' -->
+    <h2>Mettre à jour le stock pour : {{ stock.produit.name }}</h2>
+
+    <form method="post" action="{% url 'stock_edit' stock.id %}">
+        {% csrf_token %}
+
+        <!-- Affichage des messages et erreurs globales -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Section Stock -->
+        <div class="card p-3 mb-4">
+            <h5 class="card-title">Gestion de la quantité</h5>
+            
+            <!-- 1. Stock Actuel (non modifiable) -->
+            <div class="mb-3">
+                <label for="stock_initial" class="form-label">Stock Actuel</label>
+                <input type="number" id="stock_initial" class="form-control" value="{{ stock.quantity }}" readonly>
+            </div>
+
+            <!-- 2. Champ pour ajouter/retirer du stock (vient du formulaire Django) -->
+            <div class="mb-3">
+                <label for="{{ form.quantite_a_ajouter.id_for_label }}" class="form-label">{{ form.quantite_a_ajouter.label }}</label>
+                {{ form.quantite_a_ajouter }} <!-- Django va générer l'input ici -->
+                {% if form.quantite_a_ajouter.help_text %}
+                  <div class="form-text">{{ form.quantite_a_ajouter.help_text }}</div>
+                {% endif %}
+                {% for error in form.quantite_a_ajouter.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- 3. Nouveau Stock (calculé par JavaScript) -->
+            <div class="mb-3">
+                <label for="nouveau_stock" class="form-label">Nouveau Stock (calculé)</label>
+                <input type="number" id="nouveau_stock" class="form-control" readonly>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <a href="{% url 'stock_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+
+<!-- ======================= JAVASCRIPT ======================= -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. On récupère les éléments du DOM
+    const stockInitialEl = document.getElementById('stock_initial');
+    // Django crée l'ID 'id_nom_du_champ' pour les champs de formulaire
+    const quantiteAjouterEl = document.getElementById('id_quantite_a_ajouter');
+    const nouveauStockEl = document.getElementById('nouveau_stock');
+
+    // 2. Fonction pour calculer et mettre à jour le nouveau stock
+    function calculerNouveauStock() {
+        // On convertit les valeurs en nombres. On utilise 0 si le champ est vide.
+        const stockInitial = parseInt(stockInitialEl.value, 10) || 0;
+        const quantiteAjouter = parseInt(quantiteAjouterEl.value, 10) || 0;
+
+        // On fait le calcul
+        const nouveauStock = stockInitial + quantiteAjouter;
+
+        // On met à jour la valeur du champ "Nouveau Stock"
+        nouveauStockEl.value = nouveauStock;
+    }
+
+    // 3. On attache un écouteur d'événement au champ "quantité à ajouter"
+    // L'événement 'input' se déclenche à chaque fois que l'utilisateur tape quelque chose.
+    quantiteAjouterEl.addEventListener('input', calculerNouveauStock);
+
+    // 4. On appelle la fonction une première fois au chargement de la page
+    // pour initialiser le champ "Nouveau Stock".
+    calculerNouveauStock();
+});
+</script>

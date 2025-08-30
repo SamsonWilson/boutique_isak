@@ -1,0 +1,30 @@
+<h2>Liste des Boutiques</h2>
+<ul>
+    {% for boutique in boutiques %}
+        <li>{{ boutique.nom }} - {{ boutique.adresse }} - {{ boutique.telephone }}</li>
+    {% empty %}
+        <li>Aucune boutique trouvée.</li>
+    {% endfor %}
+</ul>
+<div class="container mt-4">
+    <h1 class="mb-4">Rapport de stock</h1>
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="boutiqueSelect">Boutique :</label>
+            <select name="boutique" id="boutiqueSelect" class="form-select" onchange="this.form.submit()">
+                <option value="">Toutes</option>
+                {% for b in boutiques %}
+                    <option value="{{ b.id }}" {% if request.GET.boutique == b.id|stringformat:"s" %}selected{% endif %}>
+                        {{ b.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label for="produitSelect">Produit :</label>
+            <select name="produit" id="produitSelect" class="form-select" onchange="this.form.submit()">
+                <option value="">Tous</option>
+                {% for p in produits %}
+                    <option value="{{ p.id }}" {% if request.GET.produit == p.id|stringformat:"s" %}selected{% endif %}>

@@ -1,0 +1,271 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Admin - Gestion multi-boutiques{% endblock %}</title>
+  
+  <!-- Polices Google pour un look plus moderne -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap CSS et Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <!-- Votre CSS personnalisé -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/produit.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vente.css' %}">
+
+
+
+  <style>
+    :root {
+      --sidebar-bg: #21243b;
+      --sidebar-header-bg: #171831;
+      --sidebar-link-color: #bfc9da;
+      --sidebar-link-hover-bg: #353967;
+      --sidebar-link-active-border: #0d6efd;
+      --content-bg: #f7f8fa;
+    }
+    body {
+      background: var(--content-bg);
+      font-family: 'Poppins', sans-serif; /* Police moderne */
+      overflow-x: hidden;
+    }
+    #sidebar {
+      min-width: 250px;
+      max-width: 250px;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: var(--sidebar-bg);
+      color: #fff;
+      transition: all .3s;
+      z-index: 1040;
+      display: flex;
+      flex-direction: column;
+    }
+    #sidebar .sidebar-header {
+      padding: 1.5rem;
+      background: var(--sidebar-header-bg);
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #32344d;
+      text-align: center;
+    }
+    #sidebar .nav-links {
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    #sidebar a {
+      color: var(--sidebar-link-color);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      padding: .85rem 1.5rem;
+      font-size: 1rem;
+      border-left: 4px solid transparent;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    #sidebar a:hover, #sidebar a.active {
+      background-color: var(--sidebar-link-hover-bg);
+      color: #fff;
+      border-left-color: var(--sidebar-link-active-border);
+    }
+    #sidebar .bi {
+      margin-right: 1rem;
+      font-size: 1.3rem;
+      width: 24px; /* Alignement parfait des textes */
+      text-align: center;
+    }
+    #content {
+      margin-left: 250px;
+      padding: 2rem;
+      padding-top: 80px; /* Espace pour la navbar fixe */
+      min-height: 100vh;
+      transition: margin-left .3s;
+    }
+    @media (max-width: 992px) {
+      #sidebar { left: -250px; }
+      #sidebar.active { left: 0; }
+      #content { margin-left: 0; }
+    }
+    .navbar {
+      background-color: #fff !important;
+      border-bottom: 1px solid #e9ecef;
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+    }
+    .admin-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 0.7rem;
+    }
+    .dropdown-toggle::after {
+        display: none; /* Cache la flèche moche du dropdown */
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <span><i class="bi bi-shop-window"></i> Admin Panel</span>
+  </div>
+  
+  <div class="nav-links">
+    <a href="{% url 'accueil' %}" class="{% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
+      <i class="bi bi-grid-1x2-fill"></i> Tableau de bord
+    </a>
+    <a href="{% url 'vente_dashboard' %}" class="{% if request.resolver_match.url_name == 'vente_dashboard' %}active{% endif %}">
+      <i class="bi bi-cart-plus-fill"></i> Nouvelle vente
+    </a>
+    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-box-seam-fill"></i> Produits
+    </a>
+    {% comment %} <a href="{% url 'inventaire_dashboard' %}" class="{% if request.resolver_match.url_name == 'inventaire_dashboard' %}active{% endif %}">
+      <i class="bi bi-clipboard-data-fill"></i> Inventaire
+    </a> {% endcomment %}
+    {% comment %} <a href="{% url 'detail_vente_dashboard' %}" class="{% if request.resolver_match.url_name == 'detail_vente_dashboard' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> Détail des ventes
+    </a> {% endcomment %}
+    <a href="{% url 'liste_ventes' %}" class="{% if request.resolver_match.url_name == 'liste_ventes' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> Détail des ventes
+    </a>
+    <a href="{% url 'liste_stocks' %}" class="{% if request.resolver_match.url_name == 'liste_stocks' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> Détail des ventes
+    </a>
+    <a href="{% url 'rapport_stock' %}" class="{% if request.resolver_match.url_name == 'rapport_stock' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> Détail des ventes
+    </a>
+    
+     <a href="{% url 'dashboard_vente_produit' %}" class="{% if request.resolver_match.url_name == 'dashboard_vente_produit' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> Détail des ventes
+    </a>
+    <a href="{% url 'inventaire_creer boutique.id ' %}" class="{% if request.resolver_match.url_name == 'inventaire_creer' %}active{% endif %}">
+      <i class="bi bi-receipt-cutoff"></i> inventaire_creer
+    </a>
+    <hr class="mx-3" style="border-color: #4b4f74;">
+    
+    <a href="{% url 'utilisateur_list' %}" class="{% if request.resolver_match.url_name in 'utilisateur_list,add_utilisateur,utilisateur_edit' %}active{% endif %}">
+      <i class="bi bi-people-fill"></i> Utilisateurs
+    </a>
+    
+    <hr class="mx-3" style="border-color: #4b4f74;">
+    
+    <a href="{% url 'admin:index' %}" target="_blank">
+      <i class="bi bi-gear-wide-connected"></i> Admin Django
+    </a>
+
+    
+  </div>
+  
+  <div class="mt-auto p-3 text-center text-muted small" style="font-size:0.85em; border-top:1px solid #32344d;">
+    <i class="bi bi-c-circle"></i> 2024 - Gestion Boutiques
+  </div>
+</nav>
+
+<!-- Main Content Wrapper -->
+<div id="content">
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" style="left: 250px; transition: left .3s;" id="top-navbar">
+      <div class="container-fluid">
+        <button class="btn btn-light me-2 d-lg-none" id="sidebarToggle"><i class="bi bi-list"></i></button>
+        
+        <!-- Breadcrumb (fil d'ariane) - Très pro ! -->
+        <!-- Assurez-vous d'avoir le lien vers les icônes Bootstrap dans votre <head> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"> -->
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0 align-items-center">
+    <!-- On ajoute une icône -->
+    <li class="breadcrumb-item active d-flex align-items-center" aria-current="page">
+        <i class="bi bi-shop me-2 fs-5"></i> <!-- Icône de boutique -->
+        <strong>
+            {% if utilisateur.boutique %}
+                {{ utilisateur.boutique.nom }}
+            {% else %}
+                Aucune boutique affectée
+            {% endif %}
+        </strong>
+    </li>
+  </ol>
+</nav>
+        <div class="ms-auto d-flex align-items-center">
+          {% if user.is_authenticated %}
+            <div class="dropdown">
+              <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="https://i.pravatar.cc/40?u={{ user.username }}" class="admin-avatar" alt="avatar"/>
+                <span class="d-none d-sm-inline mx-1">
+                  <strong>{{ user.get_full_name|default:user.username }}</strong>
+                </span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end text-small shadow" aria-labelledby="dropdownUser">
+                <li><a class="dropdown-item" href="#"><i class="bi bi-person-circle me-2"></i> Mon Profil</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i> Paramètres</a></li>
+                <li><hr class="dropdown-divider"></li>
+                {% comment %} <li>
+                  <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
+                  </a>
+                </li> {% endcomment %}
+              </ul>
+            </div>
+          {% else %}
+            <a class="btn btn-primary" href="{% url 'connexion' %}"><i class="bi bi-box-arrow-in-right me-2"></i> Connexion</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenu Spécifique -->
+    {% block content %}
+      <!-- C'est ici que le contenu de vos autres pages s'affichera -->
+    {% endblock %}
+</div>
+
+<!-- Bootstrap JS Bundle (inclut Popper.js) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const topNavbar = document.getElementById('top-navbar');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+      const isSidebarActive = sidebar.classList.contains('active');
+      // En mode mobile, la navbar ne doit pas bouger
+      if (window.innerWidth > 992) {
+        topNavbar.style.left = isSidebarActive ? '0' : '250px';
+      }
+    }
+    
+    sidebarToggle?.addEventListener('click', toggleSidebar);
+
+    // Ajustement de la navbar au redimensionnement
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 992) {
+            topNavbar.style.left = sidebar.classList.contains('active') ? '0' : '250px';
+        } else {
+            topNavbar.style.left = '0';
+        }
+    });
+  });
+</script>
+
+{% block extra_js %}
+<!-- Espace pour du JS spécifique à une page (ex: modal) -->
+{% endblock %}
+
+</body>
+</html>

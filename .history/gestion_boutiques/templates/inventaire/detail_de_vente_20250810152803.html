@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails du Produit</title>
+    <style>
+        /* Styles cohérents avec les autres pages */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1, h2 { color: #1c2e4a; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }
+        .nav-back { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background-color: #7f8c8d; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; }
+        
+        /* Cartes de résumé spécifiques à cette page */
+        .product-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin: 20px 0; }
+        .summary-card { background: #ecf0f1; padding: 20px; border-radius: 8px; text-align: center; }
+        .summary-card .value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .summary-card .label { font-size: 1rem; color: #7f8c8d; }
+
+        /* Tableau de l'historique des ventes */
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .history-table th, .history-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; }
+        .history-table th { background-color: #f8f9fa; }
+        .num { text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="nav-back">← Retour</a>
+        <h1 id="product-name">Chargement du produit...</h1>
+
+        <div class="product-summary">
+            <div class="summary-card">
+                <div id="current-price" class="value">...</div>
+                <div class="label">Prix Actuel</div>
+            </div>
+            <div class="summary-card">
+                <div id="current-stock" class="value">...</div>
+                <div class="label">Stock Actuel</div>
+            </div>
+            <div class="summary-card">
+                <div id="total-sold" class="value">...</div>
+                <div class="label">Total Vendu (global)</div>
+            </div>
+            <div class="summary-card">
+                <div id="total-revenue" class="value">...</div>
+                <div class="label">Revenu Total (global)</div>
+            </div>
+        </div>
+
+        <h2>Historique des Ventes</h2>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date de Vente</th>
+                    <th class="num">Quantité Vendue</th>
+                    <th class="num">Prix de Vente Unitaire</th>
+                    <th class="num">Sous-total</th>
+                </tr>
+            </thead>
+            <tbody id="sales-history-body">
+                <!-- L'historique des ventes sera injecté ici -->
+            </tbody>
+        </table>
+    </div>
+
+{% comment %} <script>
+    const PRODUCTS_STORAGE_KEY = 'mes-produits';
+    const SALES_HISTORY_KEY = 'historique-ventes';
+
+    // Fonction pour récupérer l'ID du produit depuis l'URL (ex: ?id=123)
+    function getProductIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return parseInt(params.get('id'), 10);
+    }
+
+    // Fonction principale qui affiche la page
+    function renderPage() {
+        const productId = getProductIdFromUrl();
+        if (!productId) {
+            document.body.innerHTML = "<h1>Erreur : ID de produit manquant dans l'URL.</h1>";
+            return;
+        }
+
+        const allProducts = JSON.parse(localStorage.getItem(PRODUCTS_STORAGE_KEY) || '[]');
+        const salesHistory = JSON.parse(localStorage.getItem(SALES_HISTORY_KEY) || '[]');
+
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) {
+            document.body.innerHTML = `<h1>Erreur : Produit avec l'ID ${productId} non trouvé.</h1>`;
+            return;
+        }
+
+        // Mettre à jour les informations de base
+        document.getElementById('product-name').textContent = product.name;
+        document.getElementById('current-price').textContent = `${product.price.toFixed(2)} €`;
+        document.getElementById('current-stock').textContent = product.stock;
+        
+        // Filtrer l'historique pour ne garder que les ventes de ce produit
+        const productSales = [];
+        salesHistory.forEach(sale => {
+            const itemSold = sale.items.find(item => item.id === productId);
+            if (itemSold) {
+                productSales.push({
+                    date: sale.date,
+                    quantity: itemSold.quantity,
+                    price: itemSold.price
+                });
+            }
+        });
+        
+        // Calculer les totaux globaux
+        const totalSoldCount = productSales.reduce((acc, sale) => acc + sale.quantity, 0);
+        const totalRevenueValue = productSales.reduce((acc, sale) => acc + (sale.quantity * sale.price), 0);
+        document.getElementById('total-sold').textContent = totalSoldCount;
+        document.getElementById('total-revenue').textContent = `${totalRevenueValue.toFixed(2)} €`;
+
+        // Remplir le tableau de l'historique
+        const historyTableBody = document.getElementById('sales-history-body');
+        historyTableBody.innerHTML = ''; // Vider le tableau
+
+        if (productSales.length === 0) {
+            historyTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Ce produit n\'a jamais été vendu.</td></tr>';
+        } else {
+            // Trier par date, du plus récent au plus ancien
+            productSales.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            productSales.forEach(sale => {
+                const row = document.createElement('tr');
+                const saleDate = new Date(sale.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+                const subtotal = sale.quantity * sale.price;
+                row.innerHTML = `
+                    <td>${saleDate}</td>
+                    <td class="num">${sale.quantity}</td>
+                    <td class="num">${sale.price.toFixed(2)} €</td>
+                    <td class="num">${subtotal.toFixed(2)} €</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+        }
+    }
+
+    // Lancer le rendu de la page au chargement
+    document.addEventListener('DOMContentLoaded', renderPage); {% endcomment %}
+</script>
+</body>
+</html>
+{% endblock %}

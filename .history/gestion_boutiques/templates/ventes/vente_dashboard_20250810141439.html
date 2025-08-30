@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Caisse - Modale de Quantité</title>
+    <style>
+        /* Styles Généraux */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 000px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #1c2e4a;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+
+        /* --- STYLES DE LA MODALE --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header h3 { margin-top: 0; }
+        .modal-body label { display: block; margin-bottom: 10px; font-weight: 600; }
+        .modal-body input { width: 100%; padding: 10px; font-size: 1.5rem; text-align: center; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .modal-footer { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background-color: #3498db; color: white; }
+        .btn-secondary { background-color: #e0e0e0; color: #333; }
+        /* --- FIN DES STYLES DE LA MODALE --- */
+
+        /* Autres styles */
+        .search-section { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        #product-search { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        #search-results { border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; max-height: 200px; overflow-y: auto; }
+        .result-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .result-item:last-child { border-bottom: none; }
+        .result-item:hover { background-color: #f7f7f7; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .receipt-table th, .receipt-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; vertical-align: middle; }
+        .receipt-table th { background-color: #f8f9fa; font-weight: 600; }
+        .receipt-table td.price, .receipt-table th.price, .receipt-table td.quantity, .receipt-table th.quantity { text-align: right; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .delete-btn:hover { background-color: #c0392b; }
+        .total-section { margin-top: 20px; text-align: right; }
+        #total-price { font-size: 28px; font-weight: bold; color: #27ae60; }
+        .actions { margin-top: 30px; display: flex; justify-content: flex-end; gap: 15px; }
+        .action-btn { padding: 12px 25px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+        #print-receipt { background-color: #3498db; color: white; }
+        #print-receipt:hover { background-color: #2980b9; }
+        #new-sale { background-color: #f39c12; color: white; }
+        #new-sale:hover { background-color: #e67e22; }
+        
+        @media print {
+            body { background-color: #fff; padding: 0; font-size: 12pt; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: 100%; padding: 0; }
+            .no-print, .modal-overlay { display: none !important; }
+            .receipt-table th, .receipt-table td { padding: 8px; }
+            #total-price { font-size: 20pt; }
+            h1 { text-align: center; }
+            .print-header { display: block; text-align: center; margin-bottom: 20px; }
+        }
+        
+        .print-header { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Structure de la Modale -->
+    <div id="quantity-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-product-name"></h3>
+            </div>
+            <div class="modal-body">
+                <label for="modal-quantity-input">Quantité</label>
+                <input type="number" id="modal-quantity-input" min="1" value="1">
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn" class="modal-btn btn-secondary">Annuler</button>
+                <button id="modal-confirm-btn" class="modal-btn btn-primary">Ajouter</button>
+            </div>
+        </div>
+    </div>
+    <!-- Fin de la Modale -->
+
+    <div class="container">
+        <div class="print-header">
+            <h3>Merci de votre achat !</h3>
+            <p>Date : <span id="print-date"></span></p>
+        </div>
+
+        <h1 class="no-print">Système de Caisse</h1>
+
+        <div class="search-section no-print">
+            <label for="product-search">Chercher un produit</label>
+            <input type="text" id="product-search" placeholder="Tapez le nom d'un produit...">
+            <div id="search-results"></div>
+        </div>
+
+        <h2>Reçu Client</h2>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th class="price">Prix Unitaire</th>
+                    <th class="quantity">Quantité</th>
+                    <th class="price">Sous-total</th>
+                    <th class="no-print">Action</th>
+                </tr>
+            </thead>
+            <tbody id="receipt-items"></tbody>
+        </table>
+
+        <div class="total-section">
+            <h2>Total à Payer</h2>
+            <div id="total-price">0.00 €</div>
+        </div>
+        
+        <div class="actions no-print">
+            <button id="new-sale" class="action-btn">Nouvelle Vente</button>
+            <button id="print-receipt" class="action-btn">Imprimer le reçu</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DONNÉES DES PRODUITS ---
+        const products = [
+            { id: 1, name: "Pomme Gala", price: 0.50 },
+            { id: 2, name: "Banane", price: 0.30 },
+            { id: 3, name: "Pain de campagne (500g)", price: 2.20 },
+            { id: 4, name: "Lait (1L)", price: 1.10 },
+            { id: 5, name: "Fromage de chèvre", price: 3.50 },
+            { id: 6, name: "Jus d'orange (1L)", price: 2.80 },
+            { id: 7, name: "Yaourt Nature (x4)", price: 1.90 },
+            { id: 8, name: "Tomates (kg)", price: 3.00 },
+            { id: 9, name: "Poulet fermier (kg)", price: 12.50 },
+            { id: 10, name: "Savon de Marseille", price: 2.00 },
+        ];
+
+        // --- ÉLÉMENTS DU DOM ---
+        const searchInput = document.getElementById('product-search');
+        const searchResults = document.getElementById('search-results');
+        const receiptItems = document.getElementById('receipt-items');
+        const totalPriceEl = document.getElementById('total-price');
+        const printBtn = document.getElementById('print-receipt');
+        const newSaleBtn = document.getElementById('new-sale');
+        const printDateEl = document.getElementById('print-date');
+        
+        // --- ÉLÉMENTS DE LA MODALE ---
+        const modal = document.getElementById('quantity-modal');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalQuantityInput = document.getElementById('modal-quantity-input');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        // --- ÉTAT DE L'APPLICATION ---
+        let currentReceipt = [];
+        let productForModal = null; // Stocke temporairement le produit à ajouter
+
+        // --- FONCTIONS ---
+
+        /**
+         * Affiche la modale de quantité pour un produit donné
+         */
+        function showQuantityModal(product) {
+            productForModal = product;
+            modalProductName.textContent = product.name;
+            modalQuantityInput.value = "1";
+            modal.classList.add('active');
+            modalQuantityInput.focus(); // Met le curseur dans le champ
+            modalQuantityInput.select(); // Sélectionne le texte pour le remplacer facilement
+        }
+
+        /**
+         * Cache la modale de quantité
+         */
+        function hideQuantityModal() {
+            modal.classList.remove('active');
+            productForModal = null;
+        }
+
+        /**
+         * Gère la confirmation de la quantité depuis la modale
+         */
+        function handleConfirmQuantity() {
+            const quantity = parseInt(modalQuantityInput.value, 10);
+
+            if (!productForModal || isNaN(quantity) || quantity <= 0) {
+                alert("Veuillez entrer une quantité valide.");
+                return;
+            }
+
+            const existingItem = currentReceipt.find(item => item.id === productForModal.id);
+
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                currentReceipt.push({ ...productForModal, quantity: quantity });
+            }
+
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+            renderReceipt();
+            hideQuantityModal();
+        }
+
+        /**
+         * Affiche les résultats de la recherche
+         */
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+            results.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.textContent = `${product.name} - ${product.price.toFixed(2)} €`;
+                // Quand on clique, on ne fait qu'ouvrir la modale
+                item.addEventListener('click', () => {
+                    const selectedProduct = products.find(p => p.id === product.id);
+                    if (selectedProduct) {
+                        showQuantityModal(selectedProduct);
+                    }
+                });
+                searchResults.appendChild(item);
+            });
+        }
+
+        /**
+         * Supprime un produit du reçu
+         */
+        function removeProductFromReceipt(productId) {
+            currentReceipt = currentReceipt.filter(item => item.id !== productId);
+            renderReceipt();
+        }
+
+        /**
+         * Met à jour l'affichage complet du reçu et du total
+         */
+        function renderReceipt() {
+            receiptItems.innerHTML = '';
+            let total = 0;
+
+            currentReceipt.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td class="price">${item.price.toFixed(2)} €</td>
+                    <td class="quantity">${item.quantity}</td>
+                    <td class="price">${subtotal.toFixed(2)} €</td>
+                    <td class="no-print"><button class="delete-btn" data-product-id="${item.id}">X</button></td>
+                `;
+                receiptItems.appendChild(row);
+            });
+            
+            totalPriceEl.textContent = `${total.toFixed(2)} €`;
+            
+            // Attacher les écouteurs pour les boutons de suppression
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    removeProductFromReceipt(parseInt(e.target.dataset.productId, 10));
+                });
+            });
+        }
+        
+        /**
+         * Réinitialise la vente
+         */
+        function startNewSale() {
+            if (currentReceipt.length > 0 && !confirm("Êtes-vous sûr de vouloir commencer une nouvelle vente ? Le reçu actuel sera effacé.")) {
+                return;
+            }
+            currentReceipt = [];
+            searchInput.value = '';
+            searchResults.innerHTML = '';
+            renderReceipt();
+        }
+
+        // --- ÉCOUTEURS D'ÉVÉNEMENTS ---
+
+        // Recherche de produit
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase();
+            if (query.length === 0) {
+                searchResults.innerHTML = '';
+                return;
+            }
+            const filteredProducts = products.filter(p => p.name.toLowerCase().includes(query));
+            displaySearchResults(filteredProducts);
+        });
+
+        // Actions de la modale
+        modalConfirmBtn.addEventListener('click', handleConfirmQuantity);
+        modalCancelBtn.addEventListener('click', hideQuantityModal);
+        modal.addEventListener('click', (e) => { // Ferme la modale si on clique sur le fond
+            if (e.target === modal) {
+                hideQuantityModal();
+            }
+        });
+        
+        // Raccourcis clavier pour la modale
+        modalQuantityInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleConfirmQuantity();
+            } else if (e.key === 'Escape') {
+                hideQuantityModal();
+            }
+        });
+        document.addEventListener('keydown', (e) => { // Fermer avec Echap n'importe où
+             if (e.key === 'Escape' && modal.classList.contains('active')) {
+                hideQuantityModal();
+            }
+        });
+
+        // Boutons principaux
+        printBtn.addEventListener('click', () => {
+            if (currentReceipt.length > 0) {
+                printDateEl.textContent = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                window.print();
+            } else {
+                alert("Le reçu est vide. Ajoutez des produits avant d'imprimer.");
+            }
+        });
+        
+        newSaleBtn.addEventListener('click', startNewSale);
+        
+        // Initialisation
+        renderReceipt();
+
+    </script>
+</body>
+</html>
+{% endblock %}
+
+

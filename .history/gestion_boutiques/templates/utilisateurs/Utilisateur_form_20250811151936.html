@@ -1,0 +1,62 @@
+{% extends 'base.html' %} {# Optionnel mais recommandé : hérite d'un template de base #}
+
+{% block title %}Créer un Nouvel Utilisateur{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Créer un Nouvel Utilisateur (Admin)</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Remplissez les informations ci-dessous. Un mot de passe par défaut sera généré automatiquement.
+                    </p>
+                    
+                    <form method="post" novalidate>
+                        {# Jeton de sécurité CSRF - Indispensable pour les formulaires POST dans Django #}
+                        {% csrf_token %}
+
+                        {# Affichage des erreurs générales du formulaire (non liées à un champ spécifique) #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        {# Rendu de chaque champ du formulaire avec le style Bootstrap #}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                
+                                {# Affiche le widget du champ (input, select, etc.) #}
+                                {{ field }} 
+                                
+                                {# Affiche les erreurs spécifiques à ce champ #}
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
+                                
+                                {# Affiche le texte d'aide s'il y en a un #}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <hr>
+                        
+                        <div class="d-grid gap-2">
+                             <button type="submit" class="btn btn-primary btn-lg">Créer l'utilisateur</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

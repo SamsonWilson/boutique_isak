@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            🏬 Liste des Boutiques
+        </h2>
+        {% comment %} <a href="{% url 'boutique_create' %}" class="btn btn-success">
+            ➕ Nouvelle Boutique
+        </a> {% endcomment %}
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>🏠 Nom</th>
+                        <th>📍 Adresse</th>
+                        <th>⚙️ Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for b in boutiques %}
+                    <tr>
+                        <td class="fw-semibold">{{ b.nom }}</td>
+                        <td>{{ b.adresse }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'inventaire_creer' b.id %}" class="btn btn-outline-primary btn-sm me-2">
+                                📦 Faire Inventaire
+                            </a>
+                            <a href="{% url 'inventaire_list' b.id %}" class="btn btn-outline-secondary btn-sm">
+                                📋 Liste des Inventaires
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">
+                            😢 Aucune boutique trouvée.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

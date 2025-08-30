@@ -1,0 +1,52 @@
+from django import views
+from django.urls import path
+
+from .views.views_Inventaire import Detail_venteListView, InventaireListView
+
+from .views.views_vente import ProductSearchView, VenteCreateView
+
+from .views.views_stock import StockDetailView, StockListView,StockCreateView,StockUpdateView,StockDeleteView
+from .views.views_produit import DashboardView, ProduitDetailView,ProduitCreateView, ProduitListView,ProduitUpdateView,ProduitDeleteView
+from .views.views_utilisateurs import AdminUserCreateView, ConnexionView, ToggleUserStatusView, UtilisateurListView, UtilisateurUpdateView
+from .views.views_base import AccueilView
+# from .views.views_vente import VenteCreateView, recu_pdf
+from .views.views_Boutique import BoutiqueListCreateView, BoutiqueRetrieveUpdateDestroyView
+namespace = 'Produits'
+namespace = 'stocks'
+urlpatterns = [
+    path('boutiques/', BoutiqueListCreateView.as_view(), name='boutique-list-create'),
+    path('boutiques/<int:pk>/', BoutiqueRetrieveUpdateDestroyView.as_view(), name='boutique-detail'),
+    # path('v', VenteCreateView.as_view(), name='vente_creer'),
+    # path('vente/<int:vente_id>/recu/', recu_pdf, name='vente_recu'),
+    path('', ConnexionView.as_view(), name='connexion'),
+    # path('deconnexion/', LogoutView.as_view(), name='deconnexion'),
+    path('accueil/', AccueilView.as_view(), name='accueil'),
+    # produit 
+    path('dashboard', DashboardView.as_view(), name='dashboard'),
+    path('produits/', ProduitListView.as_view(), name='produit_list'),
+    path('produits/<int:pk>/', ProduitDetailView.as_view(), name='produit_detail'),
+    path('produits/ajouter/', ProduitCreateView.as_view(), name='produit_create'),
+    path('produits/<int:pk>/modifier/', ProduitUpdateView.as_view(), name='produit_update'),
+    path('produits/<int:pk>/supprimer/', ProduitDeleteView.as_view(), name='produit_delete'),
+
+
+
+    path('stocks/', StockListView.as_view(), name='stock_list'),
+    path('stocks/add/', StockCreateView.as_view(), name='stock_add'),
+    path('stocks/<int:pk>/edit/', StockUpdateView.as_view(), name='stock_edit'),
+    path('stocks/<int:pk>/delete/', StockDeleteView.as_view(), name='stock_delete'),
+    path('stock/<int:pk>/', StockDetailView.as_view(), name='stock_detail'),
+    # path('<int:pk>/modifier/', StockUpdateView.as_view(), name='stock_update'),
+
+
+    path('ventes/', VenteCreateView.as_view(), name="vente_dashboard"),
+path("search_product/", ProductSearchView.as_view(), name="search_product"),
+# Inventaire
+    path('inventaire/', InventaireListView.as_view(), name="inventaire_dashboard"),
+    path('inventaire/detail_vente/', Detail_venteListView.as_view(), name="detail_vente_dashboard"),
+# Utilisateurs
+    path('utilisateur/ajouter/', AdminUserCreateView.as_view(), name='add_utilisateur'),
+    path("utilisateurs/", UtilisateurListView.as_view(), name="utilisateur_list"),
+    path("utilisateurs/<int:pk>/modifier/", UtilisateurUpdateView.as_view(), name="utilisateur_edit"),    
+    path('users/<int:pk>/toggle-status/', ToggleUserStatusView.as_view(), name='user_toggle_status'),
+]

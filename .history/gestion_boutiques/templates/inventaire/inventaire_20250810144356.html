@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle Vente - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Caisse</title>
+    <style>
+        /* Styles inchangés, conservés pour l'autonomie du fichier */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1, h2 { color: #1c2e4a; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; }
+        .nav-links { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav-link { display: inline-block; padding: 10px 15px; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; }
+        .inventory-link { background-color: #2ecc71; }
+        .report-link { background-color: #9b59b6; }
+        .search-section { margin-bottom: 20px; }
+        #product-search { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        #search-results { border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; max-height: 200px; overflow-y: auto; }
+        .result-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .result-item.out-of-stock { color: #999; background-color: #f2f2f2; cursor: not-allowed; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .receipt-table th, .receipt-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e4e8; }
+        .price, .quantity { text-align: right; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .total-section { margin-top: 20px; text-align: right; }
+        #total-price { font-size: 28px; font-weight: bold; color: #27ae60; }
+        .actions { margin-top: 30px; display: flex; justify-content: flex-end; gap: 15px; }
+        .action-btn { padding: 12px 25px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+        #finalize-sale { background-color: #27ae60; color: white; }
+        #print-receipt { background-color: #3498db; color: white; }
+        #new-sale { background-color: #f39c12; color: white; }
+        @media print {
+            body { background-color: #fff; padding: 0; }
+            .no-print, .nav-links { display: none !important; }
+            .container { box-shadow: none; border: none; width: 100%; max-width: 100%; }
+            .print-header { display: block; text-align: center; margin-bottom: 20px; }
+        }
+        .print-header { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="print-header">
+            <h3>Merci de votre achat !</h3>
+            <p>Date : <span id="print-date"></span></p>
+        </div>
+
+        <div class="nav-links">
+            <a href="inventaire.html" class="nav-link inventory-link">Gérer l'Inventaire →</a>
+            <a href="rapports.html" class="nav-link report-link">Voir les Rapports →</a>
+        </div>
+        <h1 class="no-print">Système de Caisse</h1>
+
+        <div class="search-section no-print">
+            <label for="product-search">Chercher un produit</label>
+            <input type="text" id="product-search" placeholder="Tapez le nom ou le code du produit...">
+            <div id="search-results"></div>
+        </div>
+
+        <h2>Reçu Client</h2>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th class="price">Prix Unitaire</th>
+                    <th class="quantity">Quantité</th>
+                    <th class="price">Sous-total</th>
+                    <th class="no-print">Action</th>
+                </tr>
+            </thead>
+            <tbody id="receipt-items"></tbody>
+        </table>
+
+        <div class="total-section">
+            <h2>Total à Payer</h2>
+            <div id="total-price">0.00 €</div>
+        </div>
+        
+        <div class="actions no-print">
+            <button id="new-sale" class="action-btn">Annuler Vente</button>
+            <button id="print-receipt" class="action-btn">Imprimer Reçu</button>
+            <button id="finalize-sale" class="action-btn">Finaliser la Vente</button>
+        </div>
+    </div>
+
+<script>
+    const PRODUCTS_STORAGE_KEY = 'mes-produits';
+    const SALES_HISTORY_KEY = 'historique-ventes';
+
+    // ... (le reste du JS de la caisse est presque identique)
+    const searchInput = document.getElementById('product-search');
+    const searchResults = document.getElementById('search-results');
+    const receiptItems = document.getElementById('receipt-items');
+    const totalPriceEl = document.getElementById('total-price');
+    const printBtn = document.getElementById('print-receipt');
+    const newSaleBtn = document.getElementById('new-sale');
+    const finalizeSaleBtn = document.getElementById('finalize-sale');
+    const printDateEl = document.getElementById('print-date');
+
+    let currentReceipt = [];
+
+    function getProducts() {
+        const products = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+        return products ? JSON.parse(products) : [];
+    }
+    function saveProducts(products) {
+        localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+    }
+
+    // NOUVELLE FONCTION pour gérer l'historique
+    function getSalesHistory() {
+        const history = localStorage.getItem(SALES_HISTORY_KEY);
+        return history ? JSON.parse(history) : [];
+    }
+    function saveSalesHistory(history) {
+        localStorage.setItem(SALES_HISTORY_KEY, JSON.stringify(history));
+    }
+    
+    // ... (displaySearchResults, addProductToReceipt, renderReceipt, startNewSale sont identiques à la version précédente)
+    function displaySearchResults(query) {
+        const allProducts = getProducts();
+        const filteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
+        
+        searchResults.innerHTML = '';
+        filteredProducts.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `${product.name} - ${product.price.toFixed(2)} € <span style="color: #888; font-size: 0.9em;">(Stock: ${product.stock})</span>`;
+            if (product.stock <= 0) {
+                item.classList.add('out-of-stock');
+            } else {
+                item.addEventListener('click', () => addProductToReceipt(product.id));
+            }
+            searchResults.appendChild(item);
+        });
+    }
+
+    function addProductToReceipt(productId) {
+        const allProducts = getProducts();
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return;
+        
+        const quantityStr = prompt(`Quelle quantité pour "${product.name}" ? (Max: ${product.stock})`, "1");
+        if (quantityStr === null) return;
+        
+        const quantity = parseInt(quantityStr, 10);
+        
+        if (isNaN(quantity) || quantity <= 0) {
+            alert("Veuillez entrer un nombre valide.");
+            return;
+        }
+        
+        if (quantity > product.stock) {
+            alert(`Stock insuffisant. Vous ne pouvez ajouter que ${product.stock} unité(s).`);
+            return;
+        }
+        
+        const existingItem = currentReceipt.find(item => item.id === productId);
+        if (existingItem) {
+            if (existingItem.quantity + quantity > product.stock) {
+                alert(`Stock insuffisant. Il y a déjà ${existingItem.quantity} dans le panier. Vous ne pouvez en ajouter que ${product.stock - existingItem.quantity} de plus.`);
+                return;
+            }
+            existingItem.quantity += quantity;
+        } else {
+            currentReceipt.push({ ...product, quantity: quantity });
+        }
+        
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+        renderReceipt();
+    }
+
+    function renderReceipt() {
+        receiptItems.innerHTML = '';
+        let total = 0;
+        currentReceipt.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td class="price">${item.price.toFixed(2)} €</td>
+                <td class="quantity">${item.quantity}</td>
+                <td class="price">${subtotal.toFixed(2)} €</td>
+                <td class="no-print"><button class="delete-btn" data-id="${item.id}">X</button></td>
+            `;
+            receiptItems.appendChild(row);
+        });
+        totalPriceEl.textContent = `${total.toFixed(2)} €`;
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                currentReceipt = currentReceipt.filter(item => item.id !== parseInt(e.target.dataset.id));
+                renderReceipt();
+            });
+        });
+    }
+
+    function startNewSale() {
+        if (currentReceipt.length > 0 && !confirm("Voulez-vous vraiment annuler la vente en cours ?")) return;
+        currentReceipt = [];
+        renderReceipt();
+    }
+
+    function printReceipt() {
+        if (currentReceipt.length === 0) { alert("Le reçu est vide."); return; }
+        printDateEl.textContent = new Date().toLocaleDateString('fr-FR');
+        window.print();
+    }
+
+    // *** FONCTION MODIFIÉE ***
+    function finalizeSale() {
+        if (currentReceipt.length === 0) {
+            alert("Le reçu est vide. Rien à finaliser.");
+            return;
+        }
+
+        // --- 1. Mise à jour de l'inventaire ---
+        let allProducts = getProducts();
+        currentReceipt.forEach(itemInReceipt => {
+            const productIndex = allProducts.findIndex(p => p.id === itemInReceipt.id);
+            if (productIndex > -1) {
+                allProducts[productIndex].stock -= itemInReceipt.quantity;
+            }
+        });
+        saveProducts(allProducts);
+
+        // --- 2. Enregistrement dans l'historique des ventes ---
+        const salesHistory = getSalesHistory();
+        const totalVente = currentReceipt.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        
+        const newSaleRecord = {
+            id: Date.now(),
+            date: new Date().toISOString(), // Format de date standardisé et triable
+            total: totalVente,
+            items: currentReceipt.map(item => ({ // On copie les infos pour ne pas dépendre de l'objet original
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+            }))
+        };
+        salesHistory.push(newSaleRecord);
+        saveSalesHistory(salesHistory);
+
+        alert("Vente finalisée ! Le stock et l'historique ont été mis à jour.");
+        
+        printReceipt();
+        currentReceipt = [];
+        renderReceipt();
+    }
+
+    // --- Écouteurs d'événements (inchangés) ---
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value;
+        if (query.length === 0) { searchResults.innerHTML = ''; return; }
+        displaySearchResults(query);
+    });
+    
+    newSaleBtn.addEventListener('click', startNewSale);
+    printBtn.addEventListener('click', printReceipt);
+    finalizeSaleBtn.addEventListener('click', finalizeSale);
+    renderReceipt();
+</script>
+</body>
+</html>
+{% endblock %}

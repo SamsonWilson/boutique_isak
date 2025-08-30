@@ -1,0 +1,209 @@
+from django.shortcuts import render, redirect
+from django.views import View
+from ..models import Produit, Vente, DetailVente
+from ..forms.forms_vente import ClientForm, VenteForm, DetailVenteFormSet
+# dans votre ventes/views.py
+from django.shortcuts import render, redirect
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import FormView
+from django.shortcuts import redirect
+from django.http import JsonResponse
+import json
+from decimal import Decimal
+from django.views import View
+
+class VenteCreateView(FormView):
+    template_name = 'ventes/vente_dashboard.html' # Le template que vous avez montré
+    form_class = ClientForm
+    success_url = "/ventes/"  # tu peux rediriger vers une autre URL
+
+    def form_valid(self, form):
+            items_json = self.request.POST.get("items")
+            if not items_json:
+                form.add_error(None, "Aucun produit sélectionné.")
+                return self.form_invalid(form)
+
+            items = json.loads(items_json)
+
+            # 1. Sauvegarde Client
+            client = form.save(commit=False)
+            client.boutique = self.request.user.boutique
+            client.save()
+            # 2. Calcul du total
+            total = sum(Decimal(i["prix"]) * int(i["quantite"]) for i in items)
+
+            # 3. Création vente
+            vente = Vente.objects.create(
+                client=client,
+                boutique=self.request.user.boutique,
+                utilisateur=self.request.user,
+                total=total
+            )
+
+            # 4. Détails vente
+            for i in items:
+                DetailVente.objects.create(
+                    vente=vente,
+                    produit_id=i["id"],
+                    quantite=i["quantite"],
+                    prix_unitaire=i["prix"]
+                )
+
+            # Redirection après succès
+            return redirect("vente_detail", pk=vente.pk)
+
+# 🔎 API Ajax pour rechercher les produits
+
+class ProductSearchView(View):
+   def search_product(request):
+    query = request.GET.get('q', '').strip()
+    print("Recherche reçue :", query)  # Pour vérifier dans la console
+
+    produits = Produt.objects.filter(nom__icontains=query)
+    print("Produits trouvés :", produits.count())
+
+    serializer = ProductSerializer(produits, many=True)
+    return JsonResponse(serializer.data, safe=False)
+
+# class VenteCreateView(View):
+#     template_name = 'ventes/vente_dashboard.html'
+
+#     def get(self, request):
+#         client_form = ClientForm()
+#         vente_form = VenteForm()
+#         formset = DetailVenteFormSet()
+#         return render(request, self.template_name, {
+#             'client_form': client_form,
+#             'vente_form': vente_form,
+#             'formset': formset
+#         })
+
+#     def post(self, request):
+#         client_form = ClientForm(request.POST)
+#         vente_form = VenteForm(request.POST)
+#         formset = DetailVenteFormSet(request.POST)
+#         if client_form.is_valid() and vente_form.is_valid():
+#             client = client_form.save()
+#             vente = vente_form.save(commit=False)
+#             vente.client = client  # Associe le client à la vente
+#             vente.save()
+#             formset = DetailVenteFormSet(request.POST, instance=vente)
+#             if formset.is_valid():
+#                 formset.save()
+#                 return redirect('success_page')  # À adapter
+#         # Si erreur, on affiche les formulaires avec les erreurs
+#         return render(request, self.template_name, {
+#             'client_form': client_form,
+#             'vente_form': vente_form,
+#             'formset': formset
+#         })
+# class VenteCreateView(View):
+#     template_name = 'ventes/vente_dashboard.html'
+
+#     def get(self, request):
+#         vente_form = VenteForm()
+#         detail_formset = DetailVenteFormSet()
+#         ventes = Vente.objects.prefetch_related('details', 'details__produit')
+#         return render(request, self.template_name, {
+#             'vente_form': vente_form,
+#             'detail_formset': detail_formset,
+#             'ventes': ventes,
+#         })
+    
+#     def post(self, request):
+#         vente_form = VenteForm(request.POST)
+#         detail_formset = DetailVenteFormSet(request.POST)
+
+#         if vente_form.is_valid() and detail_formset.is_valid():
+#             vente = vente_form.save()
+#             details = detail_formset.save(commit=False)
+#             total = 0
+#             for detail in details:
+#                 detail.vente = vente
+#                 detail.save()
+#                 total += detail.prix_unitaire * detail.quantite
+#             vente.total = total
+#             vente.save()
+#             return redirect('vente_dashboard')  # adapte à ton url name
+        
+#         ventes = Vente.objects.prefetch_related('details', 'details__produit')
+#         return render(request, self.template_name, {
+#             'vente_form': vente_form,
+#             'detail_formset': detail_formset,
+#             'ventes': ventes,
+#         })
+# from django.views.generic import FormView
+# from django.contrib.auth.mixins import LoginRequiredMixin
+# from django.urls import reverse_lazy
+# from django.contrib import messages
+# from django.shortcuts import redirect
+# from django.utils import timezone
+# from django.http import HttpResponse
+# from reportlab.pdfgen import canvas
+# from io import BytesIO
+# from ..models import Vente, DetailVente, Stock
+# from ..forms.forms_vente import VenteForm
+
+# class VenteCreateView(LoginRequiredMixin, FormView):
+#     template_name = 'core/vente_form.html'
+#     form_class = VenteForm
+#     success_url = reverse_lazy('vente_creer')
+
+#     def form_valid(self, form):
+#         produits = form.cleaned_data['produits']
+#         quantites = form.cleaned_data['quantites_list']
+#         utilisateur = self.request.user
+#         boutique = utilisateur.boutique
+
+#         if not boutique:
+#             messages.error(self.request, "Vous n'avez pas de boutique assignée.")
+#             return redirect('vente_creer')
+
+#         total = 0
+#         # Vérification des stocks
+#         for produit, qte in zip(produits, quantites):
+#             try:
+#                 stock = Stock.objects.get(boutique=boutique, produit=produit)
+#                 if stock.quantite < qte:
+#                     messages.error(self.request, f"Stock insuffisant pour {produit.nom}.")
+#                     return self.form_invalid(form)
+#             except Stock.DoesNotExist:
+#                 messages.error(self.request, f"Le produit {produit.nom} n'est pas en stock.")
+#                 return self.form_invalid(form)
+#             total += produit.prix_unitaire * qte
+
+#         # Création vente
+#         vente = Vente.objects.create(boutique=boutique, utilisateur=utilisateur, date=timezone.now(), total=total)
+
+#         # Création détails et mise à jour stock
+#         for produit, qte in zip(produits, quantites):
+#             stock = Stock.objects.get(boutique=boutique, produit=produit)
+#             DetailVente.objects.create(vente=vente, produit=produit, quantite=qte, prix_unitaire=produit.prix_unitaire)
+#             stock.quantite -= qte
+#             stock.save()
+
+#         messages.success(self.request, f"Vente N°{vente.id} enregistrée avec succès.")
+#         return super().form_valid(form)
+
+# def recu_pdf(request, vente_id):
+#     vente = Vente.objects.get(id=vente_id)
+
+#     buffer = BytesIO()
+#     p = canvas.Canvas(buffer)
+#     p.drawString(100, 800, f"Reçu vente N°{vente.id}")
+#     p.drawString(100, 780, f"Boutique: {vente.boutique.nom}")
+#     p.drawString(100, 760, f"Date: {vente.date.strftime('%d/%m/%Y %H:%M')}")
+
+#     y = 740
+#     for detail in vente.details.all():
+#         text = f"{detail.produit.nom} - Qté: {detail.quantite} - Prix: {detail.prix_unitaire} €"
+#         p.drawString(100, y, text)
+#         y -= 20
+
+#     p.drawString(100, y - 20, f"Total: {vente.total} €")
+#     p.showPage()
+#     p.save()
+#     buffer.seek(0)
+
+#     return HttpResponse(buffer, content_type='application/pdf')

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+{% comment %} <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Entrées</th>
+            <th>Autres sorties</th>
+            <th>Stock vendu</th>
+            <th>Stock théorique</th>
+            <th>Stock réel</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for item in produits_data %}
+        <tr>
+            <td>{{ item.produit.nom }}</td>
+            <td>{{ item.entrees }}</td>
+            <td>{{ item.sorties }}</td>
+            <td>{{ item.vendu }}</td>
+            <td>
+                {{ item.stock_theorique }}
+                <input type="hidden" name="stock_theorique_{{ item.produit.id }}" value="{{ item.stock_theorique }}">
+                <input type="hidden" name="stock_vendu_{{ item.produit.id }}" value="{{ item.vendu }}">
+            </td>
+            <td>
+                <input type="number" name="stock_reel_{{ item.produit.id }}" class="form-control" value="{{ item.stock_theorique }}">
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table> {% endcomment %}
+{% comment %}<div class="container mt-4">
+    <h2>Inventaire - {{ boutique.nom }}</h2>
+
+    <!-- Formulaire filtre date -->
+    <form method="get" class="row g-3 mb-4">
+        <div class="col">
+            <label>Date début</label>
+            <input type="date" name="date_debut" class="form-control" value="{{ date_debut }}">
+        </div>
+        <div class="col">
+            <label>Date fin</label>
+            <input type="date" name="date_fin" class="form-control" value="{{ date_fin }}">
+        </div>
+        <div class="col d-flex align-items-end">
+            <button class="btn btn-primary">Filtrer</button>
+        </div>
+    </form>
+
+    <!-- Formulaire inventaire -->
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label>Description</label>
+            <textarea name="description" class="form-control"></textarea>
+        </div>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Stock théorique</th>
+                    <th>Stock réel</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in produits_data %}
+                <tr>
+                    <td>{{ item.produit.nom }}</td>
+                    <td>
+                        {{ item.stock_theorique }}
+                        <input type="hidden" name="stock_theorique_{{ item.produit.id }}" value="{{ item.stock_theorique }}">
+                    </td>
+                    <td>
+                        <input type="number" name="stock_reel_{{ item.produit.id }}" class="form-control" value="{{ item.stock_theorique }}">
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-success">Valider inventaire</button>
+    </form>
+</div> {% endcomment %}
+{% endblock %}

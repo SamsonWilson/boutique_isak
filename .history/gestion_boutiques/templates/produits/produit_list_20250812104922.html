@@ -1,0 +1,1005 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+<head>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    
+    {# On charge le CSS et Font Awesome ici #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% comment %} <link rel="stylesheet" href="{% static '/css/produit.css' %}"> {% endcomment %}
+
+    
+
+{% block content %}
+<style>
+    /* votre_app/static/votre_app/css/dashboard.css */
+
+/* =================================================================== */
+/*  1. STYLES GÉNÉRAUX ET MISE EN PAGE
+/* =================================================================== */
+body { 
+    background-color: #f6f8fb; 
+    font-family: 'Inter', sans-serif; /* Assurez-vous d'importer cette police si besoin */
+    margin: 0; 
+    color: #384052;
+}
+.container { 
+    max-width: 1400px; 
+    margin: 30px auto; 
+    padding: 0 15px;
+}
+
+/* =================================================================== */
+/*  2. STYLE DES CARTES (CARDS)
+/* =================================================================== */
+.card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 25px rgba(219, 230, 255, 0.6);
+    margin-bottom: 28px;
+    padding: 22px;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #f1f3f9;
+}
+.card-header h2 {
+    margin: 0;
+    color: #233c59;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.card-header h2 .fa {
+    margin-right: 12px;
+    color: #4361ee;
+}
+
+/* =================================================================== */
+/*  3. STYLE DES TABLEAUX
+/* =================================================================== */
+.table-wrapper {
+    max-height: 400px; /* Hauteur max avant défilement vertical */
+    overflow: auto;
+    position: relative;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap; /* Empêche le retour à la ligne */
+}
+th, td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eaeaea;
+    text-align: left;
+    vertical-align: middle;
+}
+th {
+    font-weight: 600;
+    color: #4361ee;
+    position: sticky; /* En-tête qui reste visible au défilement */
+    top: 0;
+    background: #fdfdff; /* Fond pour masquer le contenu qui défile en dessous */
+    z-index: 2;
+}
+tr:last-child td {
+    border-bottom: none;
+}
+tr:hover {
+    background-color: #f5f8ff;
+}
+td .text-muted {
+    color: #8892a3;
+    font-size: 0.9em;
+}
+
+/* =================================================================== */
+/*  4. STYLE DES BOUTONS
+/* =================================================================== */
+.btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.btn-primary {
+    background-color: #4361ee;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #3b5bdb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+}
+
+/* Boutons d'action circulaires dans les tableaux */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+.btn-action-edit { 
+    color: #4361ee; 
+    background-color: #eef2ff;
+}
+.btn-action-edit:hover { 
+    background-color: #4361ee;
+    color: white;
+}
+.btn-action-delete { 
+    color: #e53e3e;
+    background-color: #fff1f1;
+}
+.btn-action-delete:hover { 
+    background-color: #e53e3e;
+    color: white;
+}
+
+/* =================================================================== */
+/*  5. STYLE DES CARTES DE STATISTIQUES (STAT-CARDS)
+/* =================================================================== */
+.stat-cards-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-bottom: 28px;
+}
+.stat-card {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 4px 25px rgba(219, 230, 255, 0.6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.stat-card-info .label {
+    font-size: 0.9em;
+    color: #9ea4b1;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.stat-card-info .value {
+    font-size: 2.1rem;
+    color: #233c59;
+    font-weight: 700;
+    line-height: 1;
+}
+.stat-card-icon {
+    font-size: 2rem;
+    padding: 12px;
+    border-radius: 50%;
+    color: white;
+}
+.icon-produits  { background-color: #4361ee; }
+.icon-stocks    { background-color: #f9a63a; }
+.icon-ventes    { background-color: #38d39f; }
+.icon-clients   { background-color: #ff4d6d; }
+
+/* =================================================================== */
+/*  6. STYLE DE LA FENÊTRE MODALE
+/* =================================================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(35, 60, 89, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+.modal-content {
+    background-color: #fff;
+    margin: 8% auto;
+    padding: 30px;
+    width: 90%;
+    max-width: 550px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideIn 0.4s ease-out;
+}
+.modal-header {
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+.modal-header h3 {
+    margin: 0;
+    color: #233c59;
+    font-size: 1.4rem;
+}
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Styles pour les formulaires à l'intérieur de la modale */
+.modal-form .form-group {
+    margin-bottom: 1.2rem;
+}
+.modal-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+}
+.modal-form .form-control,
+.modal-form .form-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal-form .form-control:focus,
+.modal-form .form-select:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+.modal-form .invalid-feedback {
+    color: #e53e3e;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+    </style>
+<div class="container">
+  
+    <!-- Section 1 : Cartes de Statistiques -->
+    <div class="stat-cards-row">
+      <div class="stat-card">
+        <div class="stat-card-info">
+          <div class="label">PRODUITS UNIQUES</div>
+          <div class="value">{{ produits.count|default:"0" }}</div>
+        </div>
+        <i class="fa fa-box stat-card-icon icon-produits"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">STOCKS ENREGISTRÉS</div>
+            <div class="value">{{ stocks.count|default:"0" }}</div>
+        </div>
+        <i class="fa fa-warehouse stat-card-icon icon-stocks"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">TOTAL VENTES (Exemple)</div>
+            <div class="value">1,254€</div>
+        </div>
+        <i class="fa fa-arrow-trend-up stat-card-icon icon-ventes"></i>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-info">
+            <div class="label">CLIENTS (Exemple)</div>
+            <div class="value">89</div>
+        </div>
+        <i class="fa fa-users stat-card-icon icon-clients"></i>
+      </div>
+    </div>
+
+    <!-- Section 2 : Gestion des Stocks -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa fa-warehouse"></i>Gestion des Stocks</h2>
+            <a href="#" class="btn btn-primary js-open-modal" data-url="{% url 'stock_add' %}">
+                <i class="fa fa-plus"></i>
+                <span>Ajouter un mouvement</span>
+            </a>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Boutique</th><th>Produit</th><th>Type</th><th>Quantité</th><th>Date</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.boutique }}</td>
+                        <td>{{ stock.produit }}</td>
+                        <td>{{ stock.get_type_mouvement_display }}</td>
+                        <td>{{ stock.quantite }}</td>
+                        <td class="text-muted">{{ stock.date_mouvement|date:"d/m/Y H:i" }}</td>
+                        <td class="actions">
+                            <a href="#" class="btn-action btn-action-edit js-open-modal" data-url="{% url 'stock_edit' stock.id %}" title="Modifier">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <a href="#" class="btn-action btn-action-delete js-delete-item" data-url="{% url 'stock_delete' stock.id %}" title="Supprimer">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" style="text-align:center; padding: 40px;">Aucun mouvement de stock trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  
+    <!-- Section 3 : Gestion des Produits -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa fa-database"></i>Catalogue des Produits</h2>
+            <a href="#" class="btn btn-primary js-open-modal" data-url="{% url 'produit_create' %}">
+                <i class="fa fa-plus"></i>
+                <span>Ajouter un produit</span>
+            </a>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th><th>Description</th><th>Prix Unitaire</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td class="text-muted">{{ produit.description|truncatechars:50 }}</td>
+                        <td>{{ produit.prix_unitaire }} €</td>
+                        <td class="actions">
+                            <a href="#" class="btn-action btn-action-edit js-open-modal" data-url="{% url 'produit_update' produit.id %}" title="Modifier">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <a href="#" class="btn-action btn-action-delete js-delete-item" data-url="{% url 'produit_delete' produit.id %}" title="Supprimer">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" style="text-align:center; padding: 40px;">Aucun produit trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========== Fenêtre Modale Générique =========== -->
+<div id="main-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <div id="modal-body">
+        <!-- Le contenu (formulaire, etc.) sera injecté ici par JavaScript -->
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // --- GESTION GÉNÉRIQUE ET RÉUTILISABLE DE LA MODALE ---
+    const modal = document.getElementById('main-modal');
+    const modalBody = document.getElementById('modal-body');
+    const closeModalBtn = modal.querySelector('.close-button');
+
+    // Fonction pour OUVRIR la modale et charger le contenu depuis une URL
+    const openModal = (url) => {
+        modal.style.display = 'block';
+        modalBody.innerHTML = '<p style="text-align:center;">Chargement...</p>'; // Indicateur de chargement
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur réseau.');
+                return response.text();
+            })
+            .then(html => {
+                modalBody.innerHTML = html;
+                const form = modalBody.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', handleFormSubmit);
+                }
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<p style="color:red; text-align:center;">Erreur: Impossible de charger le contenu.</p>`;
+                console.error('Erreur Fetch pour la modale:', error);
+            });
+    };
+
+    // Fonction pour FERMER la modale
+    const closeModal = () => {
+        modal.style.display = 'none';
+        modalBody.innerHTML = ''; // Nettoyer le contenu
+    };
+
+    // Fonction pour GÉRER LA SOUMISSION du formulaire dans la modale
+    const handleFormSubmit = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                'X-Requested-With': 'XMLHttpRequest' // Indique à Django que c'est une requête AJAX
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Si la soumission réussit, on ferme la modale et on recharge la page
+                closeModal();
+                location.reload(); 
+            } else {
+                // S'il y a des erreurs de validation, on réaffiche le formulaire avec les erreurs
+                modalBody.innerHTML = data.form_html;
+                modalBody.querySelector('form').addEventListener('submit', handleFormSubmit);
+            }
+        })
+        .catch(error => console.error('Erreur de soumission du formulaire:', error));
+    };
+
+    // --- ATTACHER LES ÉVÉNEMENTS ---
+
+    // 1. Pour tous les éléments qui ouvrent la modale (créer, modifier)
+    document.querySelectorAll('.js-open-modal').forEach(trigger => {
+        trigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            const url = this.dataset.url;
+            openModal(url);
+        });
+    });
+
+    // 2. Pour tous les éléments qui suppriment un item
+    document.querySelectorAll('.js-delete-item').forEach(trigger => {
+        trigger.addEventListener('click', function(event) {
+            event.preventDefault();
+            const url = this.dataset.url;
+            const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cet élément ? Cette action est irréversible.");
+            
+            if (confirmation) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value; // Récupérer le token CSRF de la page
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Erreur lors de la suppression.");
+                    }
+                })
+                .catch(error => console.error('Erreur de suppression:', error));
+            }
+        });
+    });
+
+    // 3. Pour fermer la modale
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+});
+</script>
+{% endblock %}
+
+{% comment %} {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+
+<style>
+/* =================================================================== */
+/*  1. STYLES GÉNÉRAUX ET MISE EN PAGE
+/* =================================================================== */
+body { 
+    background: #f6f8fb; 
+    font-family: Inter, sans-serif;
+    margin: 0; 
+}
+.container { 
+    max-width: 1400px; 
+    margin: 30px auto; 
+    padding: 0 15px; /* Ajout d'un padding pour les petits écrans */
+}
+
+/* =================================================================== */
+/*  2. STYLE DES CARTES (CARDS)
+/* =================================================================== */
+.card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 20px rgba(219, 230, 255, 0.5);
+    margin-bottom: 28px;
+    padding: 22px;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f1f3f9;
+}
+.card-header h2 {
+    margin: 0;
+    color: #233c59;
+    font-size: 1.25rem;
+}
+.card-header h2 .fa {
+    margin-right: 10px;
+    color: #4361ee;
+}
+
+/* =================================================================== */
+/*  3. STYLE DES TABLEAUX (MODIFIÉ POUR LE DÉFILEMENT VERTICAL)
+/* =================================================================== */
+.table-wrapper {
+    /* MODIFIÉ: Ajout d'une hauteur maximale et gestion du défilement vertical */
+    max-height: 300px; /* <-- NOUVEAU: Définissez ici la hauteur que vous souhaitez pour vos tableaux */
+    overflow: auto; /* Permet le défilement horizontal ET vertical */
+    overscroll-behavior-x: contain;
+    position: relative; /* Contexte pour l'en-tête sticky */
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    white-space: nowrap; /* Empêche le retour à la ligne dans les cellules */
+}
+th, td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eaeaea;
+    text-align: left;
+    vertical-align: middle;
+}
+th {
+    font-weight: 600;
+    color: #4361ee;
+    
+    /* NOUVEAU: Ces propriétés rendent l'en-tête "collant" en haut du tableau lors du défilement */
+    position: sticky;
+    top: 0;
+    background: #f1f3f9; /* Le fond est essentiel pour masquer le contenu qui défile en dessous */
+    z-index: 2; /* S'assure que l'en-tête reste au-dessus du contenu */
+}
+tr:last-child td {
+    border-bottom: none;
+}
+tr:hover {
+    background: #f1f6ff;
+}
+
+/* =================================================================== */
+/*  4. STYLE DES BOUTONS
+/* =================================================================== */
+.btn-primary {
+    background-color: #4361ee;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #3b5bdb;
+}
+
+/* Boutons d'action circulaires dans les tableaux */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.actions .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    font-size: 1rem;
+}
+.actions .btn-action-edit { color: #4361ee; }
+.actions .btn-action-edit:hover { background-color: #eef2ff; }
+.actions .btn-action-delete { color: #e53e3e; }
+.actions .btn-action-delete:hover { background-color: #fff1f1; }
+
+/* =================================================================== */
+/*  5. STYLE DES CARTES DE STATISTIQUES (STAT-CARDS)
+/* =================================================================== */
+.stat-cards-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #e5ecfa;
+    padding: 22px;
+}
+.stat-card-head {
+    font-size: 0.9em;
+    color: #9ea4b1;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+.stat-card-body {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+.stat-value {
+    font-size: 2.2rem;
+    color: #384052;
+    font-weight: 700;
+    line-height: 1;
+}
+.stat-icon {
+    font-size: 1.8rem;
+    color: #38d39f;
+}
+.stat-icon.down { color: #ff4d6d; }
+.stat-icon.db { color: #4361ee; }
+.stat-icon.stock { color: #f9a63a; }
+
+/* =================================================================== */
+/*  6. STYLE DE LA FENÊTRE MODALE
+/* =================================================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(35, 60, 89, 0.6);
+    backdrop-filter: blur(4px); /* Effet de flou moderne */
+}
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 30px;
+    border: none;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+    text-decoration: none;
+}
+
+</§style>
+
+<div class="container">
+  
+    <!-- Section 1 : Cartes de Statistiques -->
+    <div class="stat-cards-row">
+      <div class="stat-card">
+        <div class="stat-card-head">PRODUITS UNIQUES</div>
+        <div class="stat-card-body">
+          <span class="stat-value">{{ produits.count|default:"0" }}</span>
+          <i class="fa fa-box stat-icon db"></i>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-head">STOCKS ENREGISTRÉS</div>
+        <div class="stat-card-body">
+          <span class="stat-value">{{ stocks.count|default:"0" }}</span>
+          <i class="fa fa-warehouse stat-icon stock"></i>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-head">TOTAL VENTES (Exemple)</div>
+        <div class="stat-card-body">
+          <span class="stat-value">1,254€</span>
+          <i class="fa fa-arrow-trend-up stat-icon"></i>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-head">CLIENTS (Exemple)</div>
+        <div class="stat-card-body">
+          <span class="stat-value">89</span>
+          <i class="fa fa-users stat-icon down"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 : Gestion des Stocks -->
+    <div class="card">
+        <div class="card-header">
+    <h2><i class="fa fa-warehouse"></i>Gestion des Stocks</h2>
+    <!-- MODIFIÉ : 
+        - Remplacé l'ID par la classe 'js-open-modal'
+        - Ajout de l'attribut 'data-url' avec l'URL du formulaire de stock
+        - Changé href en "#" car le JavaScript gérera le clic
+        - Corrigé l'attribut class dupliqué
+    -->
+    <a href="#" class="btn-primary js-open-modal" data-url="{% url 'stock_add' %}">
+        <i class="fa fa-plus"></i>
+        <span>Ajouter un stock</span>
+    </a>
+</div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Boutique</th><th>Produit</th><th>Quantité</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.boutique }}</td>
+                        <td>{{ stock.produit }}</td>
+                        <td>{{ stock.quantite }}</td>
+                        <td class="actions">
+    <a href="{% url 'stock_edit' stock.id %}" style="color: black;">
+        <i class="fas fa-edit"></i> Modifier
+    </a> |
+    <a href="{% url 'stock_delete' stock.id %}" style="color: red;">
+        <i class="fas fa-trash-alt"></i> Supprimer
+    </a>
+</td>
+
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center; padding: 40px;">Aucun stock trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  
+    <!-- Section 3 : Gestion des Produits -->
+    <div class="card">
+        <div class="card-header">
+    <h2><i class="fa fa-database"></i>Catalogue des Produits</h2>
+    <!-- MODIFIÉ : 
+        - Remplacé l'ID par la classe 'js-open-modal'
+        - Ajout de l'attribut 'data-url' avec l'URL du formulaire de produit
+    -->
+    <button class="btn-primary js-open-modal" data-url="{% url 'produit_create' %}">
+        <i class="fa fa-plus"></i>
+        <span>Ajouter un produit</span>
+    </button>
+</div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th><th>Description</th><th>Prix Unitaire (€)</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for produit in produits %}
+                      <tr>
+                        <td>{{ produit.nom }}</td>
+                        <td>{{ produit.description|truncatechars:40 }}</td>
+                        <td>{{ produit.prix_unitaire }}</td>
+                        <td class="actions">
+                          <td class="actions">
+    <a href="{% url 'produit_update' produit.id %}"  style="color: black;">
+        <i class="fas fa-edit"></i> Modifier
+    </a> |
+    <a href="{% url 'produit_delete' produit.id %}"  style="color: red;">
+        <i class="fas fa-trash-alt"></i> Supprimer
+    </a>
+</td>
+
+    <!-- MODIFIÉ : On ajoute la classe "js-open-modal" et l'attribut "data-url" -->
+    <a href="#" class="btn-action btn-action-edit js-open-modal" 
+       data-url=
+       title="Modifier">
+       <i class="fa fa-edit"></i>
+    </a>
+
+    <!-- MODIFIÉ : On ajoute la classe "js-delete-btn" pour le JavaScript de confirmation -->
+    <a href=
+       class="btn-action btn-action-delete js-delete-btn" 
+       title="Supprimer">
+       <i class="fa fa-trash"></i>
+    </a>
+</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" style="text-align:center; padding: 40px;">Aucun produit trouvé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========== Fenêtre Modale pour l'ajout de produit =========== -->
+<div id="product-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">×</span>
+    <div id="modal-body">
+        <p>Chargement...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // --- GESTION GÉNÉRIQUE ET RÉUTILISABLE DE LA MODALE ---
+    const modal = document.getElementById('product-modal');
+    const closeBtn = document.querySelector('.close-button');
+    const modalBody = document.getElementById('modal-body');
+
+    // On sélectionne TOUS les éléments qui peuvent ouvrir la modale grâce à leur classe commune
+    const modalTriggers = document.querySelectorAll('.js-open-modal');
+
+    // Fonction pour OUVRIR la modale et charger le contenu depuis une URL
+    const openModal = (url) => {
+        modal.style.display = 'block';
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur réseau lors du chargement du formulaire.');
+                return response.text();
+            })
+            .then(html => {
+                modalBody.innerHTML = html;
+                const form = modalBody.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', handleFormSubmit);
+                }
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<p>Erreur: Impossible de charger le contenu.</p>`;
+                console.error('Erreur lors du fetch pour la modale:', error);
+            });
+    };
+
+    // Fonction pour FERMER la modale
+    const closeModal = () => {
+        modal.style.display = 'none';
+        modalBody.innerHTML = '<p>Chargement...</p>'; // On réinitialise pour la prochaine ouverture
+    };
+
+    // Fonction pour GÉRER LA SOUMISSION du formulaire dans la modale
+    const handleFormSubmit = (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest' // <-- AJOUTER CET EN-TÊTE
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            location.reload();
+        } else {
+            modalBody.innerHTML = data.form_html;
+            modalBody.querySelector('form').addEventListener('submit', handleFormSubmit);
+        }
+    })
+    .catch(error => console.error('Error submitting form:', error));
+};
+
+
+    // --- ON ATTACHE LES ÉVÉNEMENTS ---
+
+    // 1. Pour chaque bouton/lien déclencheur, on ajoute un écouteur de clic
+    modalTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function (event) {
+            event.preventDefault(); // Empêche le lien de suivre son href
+            const formUrl = this.dataset.url; // On récupère l'URL depuis l'attribut 'data-url'
+            openModal(formUrl);
+        });
+    });
+
+    // 2. Pour le bouton de fermeture de la modale
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    // 3. Pour fermer en cliquant en dehors de la modale
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+
+    // --- AMÉLIORATION : DÉFILEMENT HORIZONTAL DES TABLEAUX AVEC LA MOLETTE ---
+    const tableWrappers = document.querySelectorAll('.table-wrapper');
+    tableWrappers.forEach(wrapper => {
+        wrapper.addEventListener('wheel', (event) => {
+            if (event.deltaY !== 0 && wrapper.scrollWidth > wrapper.clientWidth) {
+                event.preventDefault();
+                wrapper.scrollLeft += event.deltaY;
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %} {% endcomment %}

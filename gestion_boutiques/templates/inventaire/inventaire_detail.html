@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Inventaire du {{ inventaire.date_inventaire|date:"d/m/Y H:i" }} - {{ inventaire.boutique.nom }}</h2>
+    <p><strong>Utilisateur :</strong> {{ inventaire.utilisateur }}</p>
+    <p><strong>Description :</strong> {{ inventaire.description }}</p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Stock théorique</th>
+                <th>Stock réel</th>
+                <th>Écart</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in details %}
+            <tr class="{% if d.ecart != 0 %}table-warning{% endif %}">
+                <td>{{ d.produit.nom }}</td>
+                <td>{{ d.stock_theorique }}</td>
+                <td>{{ d.stock_reel }}</td>
+                <td>
+                    {% if d.ecart > 0 %}
+                        <span class="text-success">+{{ d.ecart }}</span>
+                    {% elif d.ecart < 0 %}
+                        <span class="text-danger">{{ d.ecart }}</span>
+                    {% else %}
+                        <span class="text-muted">0</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Aucun détail trouvé</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

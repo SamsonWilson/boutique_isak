@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Gestion multi-boutiques{% endblock %}
+
+
+{% block content %}
+<form method="post" action="{% url 'stock_edit' stock.id %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-outline-primary">Enregistrer les modifications</button>
+</form>
+{% endblock %}
+
+
+{% comment %} <head>
+{# On charge le CSS et Font Awesome ici #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+{% block content %}
+
+{# votre_app/templates/votre_app/stock_detail_modal.html #}
+
+<div class="modal-header">
+    <h3>Historique pour : {{ produit.nom }}</h3>
+    <p class="text-muted" style="margin:0;">Boutique : {{ boutique.nom }}</p>
+</div>
+
+{# Formulaire de filtre par date #}
+<form method="GET" action="{{ form_url }}" id="date-filter-form" class="modal-form" style="display: flex; gap: 1rem; align-items: flex-end; margin-top: 1rem;">
+    <div class="form-group" style="flex: 1;">
+        {{ form.date_debut.label_tag }}
+        {{ form.date_debut }}
+    </div>
+    <div class="form-group" style="flex: 1;">
+        {{ form.date_fin.label_tag }}
+        {{ form.date_fin }}
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-bottom: 1.2rem;">Filtrer</button>
+</form>
+
+<div class="table-wrapper" style="max-height: 350px;">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th><th>Type</th><th>Quantité</th><th>Utilisateur</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mvt in movements %}
+            <tr>
+                <td>{{ mvt.date_mouvement|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if mvt.type_mouvement == 'entrée' %}
+                        <span style="color: #38d39f;">● Entrée</span>
+                    {% else %}
+                        <span style="color: #e53e3e;">● Sortie</span>
+                    {% endif %}
+                </td>
+                <td>{% if mvt.type_mouvement == 'entrée' %}+{% else %}-{% endif %}{{ mvt.quantite }}</td>
+                <td class="text-muted">{{ mvt.utilisateur.get_full_name|default:mvt.utilisateur.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align:center; padding: 20px;">Aucun mouvement pour cette période.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('main-modal');
+    const modalBody = document.getElementById('modal-body');
+    const closeModalBtn = modal.querySelector('.close-button');
+
+    // ... (les fonctions closeModal et handleFormSubmit restent les mêmes) ...
+
+    // MODIFICATION DE LA FONCTION openModal
+    const openModal = (url) => {
+        modal.style.display = 'block';
+        modalBody.innerHTML = '<p style="text-align:center;">Chargement...</p>';
+
+        fetch(url)
+            .then(response => response.ok ? response.text() : Promise.reject('Erreur réseau.'))
+            .then(html => {
+                modalBody.innerHTML = html;
+                
+                // Gère les formulaires POST (Créer/Modifier)
+                const postForm = modalBody.querySelector('form[method="post"]');
+                if (postForm) {
+                    postForm.addEventListener('submit', handleFormSubmit);
+                }
+                
+                // Gère le NOUVEAU formulaire de filtre par date (GET)
+                const filterForm = modalBody.querySelector('#date-filter-form');
+                if (filterForm) {
+                    filterForm.addEventListener('submit', handleFilterSubmit);
+                }
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<p style="color:red; text-align:center;">Erreur: Impossible de charger le contenu.</p>`;
+                console.error('Erreur Fetch pour la modale:', error);
+            });
+    };
+
+    // NOUVELLE FONCTION pour gérer le filtre de date
+    const handleFilterSubmit = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        // On construit l'URL avec les paramètres du formulaire de filtre
+        const url = new URL(form.action);
+        url.search = new URLSearchParams(new FormData(form)).toString();
+        
+        // On rappelle openModal pour recharger juste le contenu de la modale
+        openModal(url.href);
+    };
+
+    // ... (tout le reste de votre JavaScript reste identique) ...
+});
+</script> {% endcomment %}
+{% endblock %}

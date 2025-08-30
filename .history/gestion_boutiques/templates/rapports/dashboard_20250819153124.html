@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}📊 Tableau de Bord - Gestion multi-boutiques{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1 class="mb-4 text-center fw-bold text-primary">📊 Tableau de Bord</h1>
+
+    <!-- =======================  Statistiques Résumées ======================= -->
+    <div class="row g-4 mb-4">
+        <!-- Vente du jour -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-success text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-coins"></i> Vente du jour</h5>
+                    <h2 class="fw-bold">{{ total_jour|default:0 }} €</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Dernières ventes -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-primary text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-receipt"></i> Dernières ventes</h5>
+                    <h2 class="fw-bold">{{ dernieres_ventes.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Stocks faibles -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-danger text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-triangle-exclamation"></i> Stocks faibles</h5>
+                    <h2 class="fw-bold">{{ stocks_faibles.count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =======================  Ventes Récentes ======================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-clock"></i> 🛍️ 5 Dernières ventes</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Utilisateur</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in dernieres_ventes %}
+                    <tr>
+                        <td>{{ v.date|date:"d/m/Y H:i" }}</td>
+                        <td>{{ v.client.nom|default:"-" }}</td>
+                        <td>{{ v.utilisateur.username }}</td>
+                        <td class="fw-bold text-success">{{ v.total }} €</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Aucune vente trouvée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =======================  Graphiques ======================= -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 📊 Top 5 Produits vendus</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="produitsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> 📈 Répartition du CA</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="caChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =======================  Stocks faibles ======================= -->
+    <div class="card shadow-sm mt-5">
+        <div class="card-header bg-light">
+            <h5><i class="fas fa-exclamation-circle"></i> ⚠️ Produits en stock faible (&lt;= 5)</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead class="table-danger">
+                    <tr>
+                        <th>Boutique</th>
+                        <th>Produit</th>
+                        <th>Quantité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in stocks_faibles %}
+                    <tr>
+                        <td>{{ s.boutique.nom }}</td>
+                        <td>{{ s.produit.nom }}</td>
+                        <td class="text-danger fw-bold">{{ s.quantite }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-center text-muted">Aucun stock faible</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const produitsLabels = {{ labels_json|safe }};
+    const produitsQuantites = {{ quantites_json|safe }};
+    const produitsCA = {{ ca_json|safe }};
+
+    // Graph produits
+    new Chart(document.getElementById("produitsChart"), {
+        type: 'bar',
+        data: {
+            labels: produitsLabels,
+            datasets: [{
+                label: "Quantité vendue",
+                data: produitsQuantites,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Graph CA
+    new Chart(document.getElementById("caChart"), {
+        type: 'pie',
+        data: {
+            labels: produitsLabels,
+            datasets: [{
+                data: produitsCA,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8E44AD', '#27AE60']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+</script>
+{% endblock %}

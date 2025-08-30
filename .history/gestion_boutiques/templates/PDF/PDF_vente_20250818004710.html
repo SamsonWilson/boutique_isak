@@ -1,0 +1,70 @@
+
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture Vente {{ vente.id }}</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif; /* Compatible avec PDF */
+            font-size: 12px;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid #666;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Facture Vente N° {{ vente.id }}</h1>
+    <p><strong>Date :</strong> {{ vente.date|date:"d/m/Y H:i" }}</p>
+    <p><strong>Client :</strong> {{ vente.client.nom }}</p>
+    <p><strong>Contact :</strong> {{ vente.client.contact }}</p>
+
+    <h2>Détails</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Prix Unitaire</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in vente.details.all %}
+                <tr>
+                    <td>{{ detail.produit.nom }}</td>
+                    <td>{{ detail.quantite }}</td>
+                    <td>{{ detail.prix_unitaire }} €</td>
+                    <td>{{ detail.quantite|mul:detail.prix_unitaire }} €</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="total">Montant total : {{ vente.total }} €</p>
+</body>
+</html>
+
+
+
+{% endblock %}
+

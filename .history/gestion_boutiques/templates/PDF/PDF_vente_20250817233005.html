@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; margin: 20px; }
+        h1, h2, h3 { text-align: center; margin: 0; padding: 0; }
+        .header { margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: center; }
+        th { background: #f0f0f0; }
+        .total td { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Boutique {{ vente.boutique.nom }}</h1>
+        <h3>Reçu de vente N°{{ vente.id }}</h3>
+        <p>Date : {{ vente.date|date:"d/m/Y H:i" }}</p>
+    </div>
+
+    <p><strong>Client :</strong> {{ vente.client.nom }} | {{ vente.client.contact }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>PU (€)</th>
+                <th>Quantité</th>
+                <th>Sous-total (€)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in vente.detailvente_set.all %}
+            <tr>
+                <td>{{ d.produit.nom }}</td>
+                <td>{{ d.prix_unitaire }}</td>
+                <td>{{ d.quantite }}</td>
+                <td>{{ d.prix_unitaire|floatformat:2|add:""|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total">
+                <td colspan="3">TOTAL</td>
+                <td>{{ vente.total }} €</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="text-align:center; margin-top:30px;">Merci de votre achat 🙏</p>
+</body>
+</html>

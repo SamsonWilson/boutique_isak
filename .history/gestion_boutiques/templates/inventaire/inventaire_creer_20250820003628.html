@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Créer un inventaire - {{ boutique.nom }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label>Description</label>
+            <textarea name="description" class="form-control"></textarea>
+        </div>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Stock théorique</th>
+                    <th>Stock réel</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for produit in produits %}
+                <tr>
+                    <td>{{ produit.nom }}</td>
+                    <td>{{ produit.stock }}</td>
+                    <td>
+                        <input type="number" name="stock_reel_{{ produit.id }}" class="form-control" required>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-success">Valider inventaire</button>
+    </form>
+</div>
+{% endblock %}
